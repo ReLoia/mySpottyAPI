@@ -3,8 +3,8 @@ const fetch = require("node-fetch").default;
 const fs = require('fs');
 require("dotenv").config();
 
-const spEndpoint = "https://api.spotify.com/v1/",
-	baseUrl = process.env.PROJECT_DOMAIN;
+const spEndpoint = "https://api.spotify.com/v1/";
+let baseUrl = process.env.PROJECT_DOMAIN;
 
 if (!baseUrl.startsWith("http")) baseUrl = "https://" + baseUrl + ".glitch.me";
 
