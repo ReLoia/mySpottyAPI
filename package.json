@@ -2,8 +2,9 @@
   "name": "reloia-listen",
   "version": "1.0.0",
   "description": "",
-  "main": "./server.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "server": "nodemon server.js"
   },
   "keywords": [],
