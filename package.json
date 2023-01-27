@@ -1,0 +1,19 @@
+{
+  "name": "reloia-listen",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./server.js",
+  "scripts": {
+    "server": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "node-fetch": "2.0",
+    "pnpm": "^7.26.0",
+    "request": "^2.88.2"
+  }
+}
