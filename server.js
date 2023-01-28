@@ -24,6 +24,7 @@ let last_accesstoken = "",
 	};
 
 const app = express();
+app.use((require("cors"))());
 
 if (fs.existsSync("./data.json")) {
 	const datas = JSON.parse(fs.readFileSync("./data.json"));
