@@ -1,6 +1,7 @@
 const express = require("express");
 const fetch = require("node-fetch").default;
 const fs = require('fs');
+const cors = require('cors');
 require("dotenv").config();
 
 const spEndpoint = "https://api.spotify.com/v1/";
@@ -25,7 +26,7 @@ let last_accesstoken = "",
 	};
 
 const app = express();
-app.use((require("cors"))());
+app.use(cors());
 
 if (fs.existsSync("./data.json")) {
 	const datas = JSON.parse(fs.readFileSync("./data.json"));
