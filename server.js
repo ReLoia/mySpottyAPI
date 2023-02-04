@@ -14,13 +14,14 @@ let last_accesstoken = "",
 	last_refreshtoken = "",
 	last_timestamp = 0,
 	last_data = {
-		author: "no data",
-		name: "No data :U",
+		author: "loading",
+		name: "Please wait...",
 		song_link: "",
 		duration: 0,
 		playing: false,
-		album_image: "",
-		explicit: false
+		album_image: "https://upload.wikimedia.org/wikipedia/commons/5/59/Empty.png",
+		explicit: false,
+		progress: 0
 	};
 
 const app = express();
@@ -30,6 +31,7 @@ if (fs.existsSync("./data.json")) {
 	const datas = JSON.parse(fs.readFileSync("./data.json"));
 
 	if (datas.refresh_token) {
+	    last_refreshtoken = datas.refresh_token;
 		fetch(baseUrl + '/refresh-token?refresh_token=' + datas.refresh_token );
 	}
 }
@@ -45,7 +47,7 @@ function handleRefreshToken(refresh_token) {
 }
 
 async function fetchData () {
-	if (Date.now() > (last_timestamp + 3600000) && last_refreshtoken) fetch(baseUrl + "refresh-token" + "?refresh_token=" + last_refreshtoken);
+	if (Date.now() > (last_timestamp + 3600000) && last_refreshtoken) await fetch(baseUrl + "/refresh-token?refresh_token=" + last_refreshtoken);
 	
 	if (last_accesstoken) { // token non scaduto e non nullo
 		let response = await fetch(spEndpoint + "me/player/currently-playing", {
@@ -64,6 +66,7 @@ async function fetchData () {
 					explicit: json.item.explicit,
 					playing: json.is_playing,
 					album_image: json.item.album.images[1].url,
+					progress: json.progress_ms,
 				};
 			} catch (err) {
 				console.error(err);
@@ -85,12 +88,16 @@ async function fetchData () {
 					explicit: json.items[0].track.explicit,
 					playing: false, // Obviously it is false because it was previously playing
 					album_image: json.items[0].track.album.images[1].url,
+					progress: 0,
 				};
 			} catch (err) {
 				console.error(err);
 				console.log(response);
 			}
 		}
+    else if (response.status == 401) {
+      fetch(baseUrl + "/refresh-token?refresh_token=" + last_refreshtoken);
+    }
 	}
 };
 setInterval(fetchData, 6000);
