@@ -32,14 +32,14 @@ if (fs.existsSync("./data.json")) {
 	const datas = JSON.parse(fs.readFileSync("./data.json"));
 
 	if (datas.refresh_token) {
-	    last_refreshtoken = datas.refresh_token;
-		fetch(baseUrl + '/refresh-token?refresh_token=' + datas.refresh_token );
+		last_refreshtoken = datas.refresh_token;
+		fetch(baseUrl + '/refresh-token?refresh_token=' + datas.refresh_token);
 	}
 }
 
-const handleErrors = (res, err, msg) => res.send({
+const handleErrors = (res, err, message) => res.send({
 	code: err,
-	message: msg
+	message
 });
 
 function handleRefreshToken(refresh_token) {
@@ -47,9 +47,9 @@ function handleRefreshToken(refresh_token) {
 	fs.writeFileSync('./data.json', `{ "refresh_token": "${refresh_token}" }`);
 }
 
-async function fetchData () {
+async function fetchData() {
 	if (Date.now() > (last_timestamp + 3600000) && last_refreshtoken) await fetch(baseUrl + "/refresh-token?refresh_token=" + last_refreshtoken);
-	
+
 	if (last_accesstoken) { // token non scaduto e non nullo
 		let response = await fetch(spEndpoint + "me/player/currently-playing", {
 			headers: { Authorization: "Bearer " + last_accesstoken }
@@ -96,35 +96,15 @@ async function fetchData () {
 				console.log(response);
 			}
 		}
-    else if (response.status == 401) {
-      fetch(baseUrl + "/refresh-token?refresh_token=" + last_refreshtoken);
-    }
+		else if (response.status == 401) {
+			fetch(baseUrl + "/refresh-token?refresh_token=" + last_refreshtoken);
+		}
 	}
 };
 setInterval(fetchData, 6000);
+fetchData();
 
-/**
- * What I would like to get:
- *
- * Current playing -> If not playing anything then: DONE
- * Last played	DONE
- *
- * Response structure: DONE
- * {
- * 	author,
- * 	name,
- * 	song_link,
- * 	duration,
- * 	playing,
- * 	album_image,
- * 	explicit
- * }
- *
- */
-
-
-app.get("/", (req, res) => handleErrors(res, 403, "This is not your business, please go to https://reloia.github.io/"));
-
+app.get("/", (req, res) => handleErrors(res, 403, `You shouldn't be here... Please go to https://reloia.github.io/ or the api endpoint : ${baseUrl}/api`));
 app.get("/api", async (req, res) => {
 	if (!last_accesstoken) return handleErrors(res, 401, "Not logged in to Spotify or the Refresh Token has expired");
 
@@ -162,8 +142,6 @@ app.get("/callback", (req, res) => {
 			handleRefreshToken(data.refresh_token);
 
 			last_timestamp = Date.now();
-			
-			// setInterval(fetchData, 6000);
 		});
 	}
 
