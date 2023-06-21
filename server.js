@@ -130,16 +130,18 @@ app.post("/sotd/clear", async (req, res) => {
 })
 
 function appendToSotd(data) {
+	songs = 1;
 	if (!fs.existsSync("./sotd.json")) fs.writeFileSync("./sotd.json", JSON.stringify([data]));
 	else {
 		const sotd = JSON.parse(fs.readFileSync("./sotd.json"));
 		if (sotd.length >= 5) sotd.shift();
 		sotd.push(data);
+		songs = sotd.length;
 
 		fs.writeFileSync("./sotd.json", JSON.stringify(sotd));
 	}
 
-	return { message: `Song added: ${data.name} by ${data.author}, date: ${data.date} with album cover ${data.album}` };
+	return { message: `Song added: ${data.name} by ${data.author}, date: ${data.date} with album cover ${data.album}`, songs };
 }
 
 app.post("/sotd/url", async (req, res) => {
