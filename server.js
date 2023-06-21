@@ -9,8 +9,6 @@ let baseUrl = process.env.PROJECT_DOMAIN;
 
 if (!baseUrl.startsWith("http")) baseUrl = "https://" + baseUrl + ".glitch.me";
 
-console.log(process.env.PROJECT_DOMAIN);
-
 let last_accesstoken = "",
 	last_refreshtoken = "",
 	last_timestamp = 0,
@@ -27,6 +25,11 @@ let last_accesstoken = "",
 
 const app = express();
 app.use(cors());
+app.use(express.json())
+app.use((req, res, next) => {
+	console.log(`[${req.method}] [${new Date().toLocaleString("it")}] ${req.url}`)
+	next();
+})
 
 if (fs.existsSync("./data.json")) {
 	const datas = JSON.parse(fs.readFileSync("./data.json"));
@@ -56,7 +59,7 @@ async function fetchData() {
 		});
 
 		if (response.status == 200) { // Current playing
-			console.log("Current played");
+			// console.log("Current played");
 			try {
 				const json = await (response).json();
 				last_data = {
@@ -74,13 +77,13 @@ async function fetchData() {
 				console.log(response);
 			}
 		} else if (response.status == 204) { // Last played
-			console.log("Last played");
+			// console.log("Last played");
 			response = await fetch(spEndpoint + "me/player/recently-played?limit=1", {
 				headers: { Authorization: "Bearer " + last_accesstoken }
 			});
 
 			try {
-				const json = await (response).json();
+				const json = await response.json();
 				last_data = {
 					author: json.items[0].track.artists[0].name,
 					name: json.items[0].track.name,
@@ -102,14 +105,37 @@ async function fetchData() {
 	}
 };
 setInterval(fetchData, 6000);
-fetchData();
 
 app.get("/", (req, res) => handleErrors(res, 403, `You shouldn't be here... Please go to https://reloia.github.io/ or the api endpoint : ${baseUrl}/api`));
-app.get("/api", async (req, res) => {
+app.get("/api", async (_, res) => {
 	if (!last_accesstoken) return handleErrors(res, 401, "Not logged in to Spotify or the Refresh Token has expired");
-
 	res.send(last_data);
 });
+
+app.get("/sotd", async (_, res) => {
+	if (!fs.existsSync("./sotd.json")) return handleErrors(res, 404, "No songs of the day");
+	const data = JSON.parse(fs.readFileSync("./sotd.json")).reverse();	res.send(data);
+})
+app.post("/sotd", async (req, res) => {
+	const { name, author, date, album, code } = req.body;
+
+	if (!name || !author || !date || !album || !code) return handleErrors(res, 400, 'Missing parameters');
+	if (code !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+
+	if (!fs.existsSync("./sotd.json")) fs.writeFileSync("./sotd.json", JSON.stringify([{ name, author, date, album}]));
+	else {
+		const data = JSON.parse(fs.readFileSync("./sotd.json"));
+		if (data.length >= 5) data.shift();
+		data.push({ name, author, date, album });
+
+		fs.writeFileSync("./sotd.json", JSON.stringify(data));
+	}
+
+	res.send({ message: `Song added: ${name} by ${author}, date: ${date} with album cover ${album}` });
+})
+
+
+// Spotify login stuff
 
 app.get("/letmeinplease", (req, res) => {
 	if (Date.now() < (last_timestamp + 3600000)) return handleErrors(res, 403, "Already logged in.");
@@ -164,6 +190,7 @@ app.get("/refresh-token", (req, res) => {
 			const body = await r.json();
 			last_accesstoken = body.access_token;
 			last_timestamp = Date.now();
+			fetchData();
 			res.send({
 				access_token: last_accesstoken
 			});
