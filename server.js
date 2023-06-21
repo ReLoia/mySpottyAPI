@@ -50,18 +50,22 @@ function handleRefreshToken(refresh_token) {
 	fs.writeFileSync('./data.json', `{ "refresh_token": "${refresh_token}" }`);
 }
 
+function makeRequest(endpoint) {
+	return fetch(spEndpoint + endpoint, {
+		headers: { Authorization: "Bearer " + last_accesstoken }
+	});
+}
+
 async function fetchData() {
 	if (Date.now() > (last_timestamp + 3600000) && last_refreshtoken) await fetch(baseUrl + "/refresh-token?refresh_token=" + last_refreshtoken);
 
 	if (last_accesstoken) { // token non scaduto e non nullo
-		let response = await fetch(spEndpoint + "me/player/currently-playing", {
-			headers: { Authorization: "Bearer " + last_accesstoken }
-		});
+		let response = await makeRequest("me/player/currently-playing");
 
 		if (response.status == 200) { // Current playing
 			// console.log("Current played");
 			try {
-				const json = await (response).json();
+				const json = await response.json();
 				last_data = {
 					author: json.item.artists[0].name,
 					name: json.item.name,
@@ -78,9 +82,7 @@ async function fetchData() {
 			}
 		} else if (response.status == 204) { // Last played
 			// console.log("Last played");
-			response = await fetch(spEndpoint + "me/player/recently-played?limit=1", {
-				headers: { Authorization: "Bearer " + last_accesstoken }
-			});
+			response = await makeRequest("me/player/recently-played?limit=1");
 
 			try {
 				const json = await response.json();
@@ -116,22 +118,48 @@ app.get("/sotd", async (_, res) => {
 	if (!fs.existsSync("./sotd.json")) return handleErrors(res, 404, "No songs of the day");
 	const data = JSON.parse(fs.readFileSync("./sotd.json")).reverse();	res.send(data);
 })
+app.post("/sotd/clear", async (req, res) => {
+	const { code } = req.body;
+
+	if (!code) return handleErrors(res, 400, 'Missing parameters');
+	if (code !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+
+	fs.writeFileSync("./sotd.json", "[]");
+
+	res.send({ message: "Songs cleared" });
+})
+
+function appendToSotd(data) {
+	if (!fs.existsSync("./sotd.json")) fs.writeFileSync("./sotd.json", JSON.stringify([data]));
+	else {
+		const sotd = JSON.parse(fs.readFileSync("./sotd.json"));
+		if (sotd.length >= 5) sotd.shift();
+		sotd.push(data);
+
+		fs.writeFileSync("./sotd.json", JSON.stringify(sotd));
+	}
+
+	return { message: `Song added: ${data.name} by ${data.author}, date: ${data.date} with album cover ${data.album}` };
+}
+
+app.post("/sotd/url", async (req, res) => {
+	const { code, url } = req.body;
+
+	if (!code || !url) return handleErrors(res, 400, 'Missing parameters');
+	if (code !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+
+	const it = new URL(url).pathname; const response = await makeRequest(`tracks/${it.slice(it.lastIndexOf("/")+1)}?market=IT`)
+	const json = await response.json()
+	
+	return res.send(appendToSotd({ name: json.name, author: json.artists.map(a => a.name).join(", "), date: Date.now(), album: json.album.images[0].url }))
+})
 app.post("/sotd", async (req, res) => {
 	const { name, author, date, album, code } = req.body;
 
 	if (!name || !author || !date || !album || !code) return handleErrors(res, 400, 'Missing parameters');
 	if (code !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
 
-	if (!fs.existsSync("./sotd.json")) fs.writeFileSync("./sotd.json", JSON.stringify([{ name, author, date, album}]));
-	else {
-		const data = JSON.parse(fs.readFileSync("./sotd.json"));
-		if (data.length >= 5) data.shift();
-		data.push({ name, author, date, album });
-
-		fs.writeFileSync("./sotd.json", JSON.stringify(data));
-	}
-
-	res.send({ message: `Song added: ${name} by ${author}, date: ${date} with album cover ${album}` });
+	return res.send(appendToSotd({ name, author, date, album }))
 })
 
 
