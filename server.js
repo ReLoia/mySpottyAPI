@@ -145,10 +145,10 @@ function appendToSotd(data) {
 }
 
 app.post("/sotd/url", async (req, res) => {
-	const { code, url } = req.body;
+	const { url } = req.body;
 
-	if (!code || !url) return handleErrors(res, 400, 'Missing parameters');
-	if (code !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+	if (!url) return handleErrors(res, 400, 'Missing parameters');
+	if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
 
 	const it = new URL(url).pathname; const response = await makeRequest(`tracks/${it.slice(it.lastIndexOf("/")+1)}?market=IT`)
 	const json = await response.json()
@@ -156,10 +156,10 @@ app.post("/sotd/url", async (req, res) => {
 	return res.send(appendToSotd({ name: json.name, author: json.artists.map(a => a.name).join(", "), date: Date.now(), album: json.album.images[0].url }))
 })
 app.post("/sotd", async (req, res) => {
-	const { name, author, date, album, code } = req.body;
+	const { name, author, date, album } = req.body;
 
-	if (!name || !author || !date || !album || !code) return handleErrors(res, 400, 'Missing parameters');
-	if (code !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+	if (!name || !author || !date || !album) return handleErrors(res, 400, 'Missing parameters');
+	if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
 
 	return res.send(appendToSotd({ name, author, date, album }))
 })
@@ -214,7 +214,7 @@ app.get("/refresh-token", (req, res) => {
 	fetch("https://accounts.spotify.com/api/token", {
 		method: "post",
 		body: formData,
-		headers: { Authorization: "Basic " + (Buffer.from(process.env.CLIENT_ID + ":" + process.env.CLIENT_SECRET)).toString("base64"), }
+		headers: { Authorization: `Basic ${(Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`)).toString("base64")}` }
 	}).then(async r => {
 		if (r.status === 200) {
 			const body = await r.json();
