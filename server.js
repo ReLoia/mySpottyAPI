@@ -47,12 +47,10 @@ if (fs.existsSync("./data.json")) {
  * @param {String} message 
  */
 const handleErrors = (res, err, message) => {
-	res.writeHead(err);
-	res.write({
+	res.status(err).send({
 		code: err,
 		message
 	});
-	res.end()
 }
 
 function handleRefreshToken(refresh_token) {
