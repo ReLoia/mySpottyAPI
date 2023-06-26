@@ -47,7 +47,7 @@ if (fs.existsSync("./data.json")) {
  * @param {String} message 
  */
 const handleErrors = (res, err, message) => {
-	res.status = err;
+	res.sendStatus(err);
 	res.send({
 		code: err,
 		message
