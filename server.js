@@ -40,10 +40,19 @@ if (fs.existsSync("./data.json")) {
 	}
 }
 
-const handleErrors = (res, err, message) => res.send({
-	code: err,
-	message
-});
+/**
+ * 
+ * @param {Response} res 
+ * @param {Number} err 
+ * @param {String} message 
+ */
+const handleErrors = (res, err, message) => {
+	res.status = err;
+	res.send({
+		code: err,
+		message
+	});
+}
 
 function handleRefreshToken(refresh_token) {
 	last_refreshtoken = refresh_token;
