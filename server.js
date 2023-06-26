@@ -48,10 +48,11 @@ if (fs.existsSync("./data.json")) {
  */
 const handleErrors = (res, err, message) => {
 	res.sendStatus(err);
-	res.end({
+	res.write({
 		code: err,
 		message
 	});
+	res.end()
 }
 
 function handleRefreshToken(refresh_token) {
@@ -125,7 +126,7 @@ app.get("/api", async (_, res) => {
 
 app.get("/sotd", async (_, res) => {
 	if (!fs.existsSync("./sotd.json")) return handleErrors(res, 404, "No songs of the day");
-	const data = JSON.parse(fs.readFileSync("./sotd.json")).reverse();	res.send(data);
+	const data = JSON.parse(fs.readFileSync("./sotd.json")).reverse(); res.send(data);
 })
 app.post("/sotd/clear", async (req, res) => {
 	const { code } = req.body;
@@ -139,7 +140,7 @@ app.post("/sotd/clear", async (req, res) => {
 })
 
 function appendToSotd(data) {
-	songs = 1;
+	let songs = 1;
 	if (!fs.existsSync("./sotd.json")) fs.writeFileSync("./sotd.json", JSON.stringify([data]));
 	else {
 		const sotd = JSON.parse(fs.readFileSync("./sotd.json"));
@@ -159,9 +160,9 @@ app.post("/sotd/url", async (req, res) => {
 	if (!url) return handleErrors(res, 400, 'Missing parameters');
 	if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
 
-	const it = new URL(url).pathname; const response = await makeRequest(`tracks/${it.slice(it.lastIndexOf("/")+1)}?market=IT`)
+	const it = new URL(url).pathname; const response = await makeRequest(`tracks/${it.slice(it.lastIndexOf("/") + 1)}?market=IT`)
 	const json = await response.json()
-	
+
 	return res.send(appendToSotd({ name: json.name, author: json.artists.map(a => a.name).join(", "), date: Date.now(), album: json.album.images[0].url }))
 })
 app.post("/sotd", async (req, res) => {
