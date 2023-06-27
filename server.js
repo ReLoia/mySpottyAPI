@@ -122,19 +122,33 @@ app.get("/api", async (_, res) => {
 	res.send(last_data);
 });
 
+let maxSongs = 5;
+
 app.get("/sotd", async (_, res) => {
 	if (!fs.existsSync("./sotd.json")) return handleErrors(res, 404, "No songs of the day");
 	const data = JSON.parse(fs.readFileSync("./sotd.json")).reverse(); res.send(data);
 })
 app.post("/sotd/clear", async (req, res) => {
-	const { code } = req.body;
-
 	if (!code) return handleErrors(res, 400, 'Missing parameters');
-	if (code !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+	if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
 
 	fs.writeFileSync("./sotd.json", "[]");
 
 	res.send({ message: "Songs cleared" });
+})
+app.post("/sotd/remove", async (req, res) => {
+	const { index } = req.body;
+
+	if (index == undefined) return handleErrors(res, 400, 'Missing parameters');
+	if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+
+	const sotd = JSON.parse(fs.readFileSync("./sotd.json"));
+
+	if (index < 0 || index > sotd.length) return handleErrors(res, 400, "Index out of range");
+	sotd.splice(index, 1);
+	fs.writeFileSync("./sotd.json", JSON.stringify(sotd));
+
+	res.send({ message: `Song removed` });
 })
 
 function appendToSotd(data) {
@@ -142,7 +156,7 @@ function appendToSotd(data) {
 	if (!fs.existsSync("./sotd.json")) fs.writeFileSync("./sotd.json", JSON.stringify([data]));
 	else {
 		const sotd = JSON.parse(fs.readFileSync("./sotd.json"));
-		if (sotd.length >= 5) sotd.shift();
+		if (sotd.length >= maxSongs) sotd.shift();
 		sotd.push(data);
 		songs = sotd.length;
 
@@ -159,6 +173,8 @@ app.post("/sotd/url", async (req, res) => {
 	if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
 
 	const it = new URL(url).pathname; const response = await makeRequest(`tracks/${it.slice(it.lastIndexOf("/") + 1)}?market=IT`)
+	if (response.status !== 200) return handleErrors(res, 500, "The server is not responding correctly");
+
 	const json = await response.json()
 
 	return res.send(appendToSotd({ name: json.name, author: json.artists.map(a => a.name).join(", "), date: Date.now(), album: json.album.images[0].url }))
