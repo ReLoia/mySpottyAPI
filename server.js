@@ -122,7 +122,7 @@ app.get("/api", async (_, res) => {
 	res.send(last_data);
 });
 
-let maxSongs = 5;
+let maxSongs = 31;
 
 app.get("/sotd", async (_, res) => {
 	if (!fs.existsSync("./sotd.json")) return handleErrors(res, 404, "No songs of the day");
