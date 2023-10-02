@@ -125,7 +125,8 @@ class SpotifyAPI {
 					console.log(response);
 				}
 			} else if (response.status == 204) { // Last played
-				response = await makeRequest("me/player/recently-played?limit=1");
+				response = await this.makeRequest("me/player/recently-played?limit=1");
+				const json = await response.json();
 
 				try {
 					return {
@@ -171,7 +172,7 @@ setInterval(async () => {
 }, 5000);
 
 wss.on("connection", ws => {
-	const data = spotify.data;
+	const data = { ...spotify.data };
 	data.clients = wss.clients.size;
 	ws.send(JSON.stringify(data));
 
@@ -288,7 +289,7 @@ app.post("/sotd/url", async (req, res) => {
 	if (!url) return handleErrors(res, 400, 'Missing parameters');
 	if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
 
-	const it = new URL(url).pathname; const response = await makeRequest(`tracks/${it.slice(it.lastIndexOf("/") + 1)}?market=IT`)
+	const it = new URL(url).pathname; const response = await spotify.makeRequest(`tracks/${it.slice(it.lastIndexOf("/") + 1)}?market=IT`)
 	if (response.status !== 200) return handleErrors(res, 500, "The server is not responding correctly");
 
 	const json = await response.json()
