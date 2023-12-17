@@ -21,9 +21,9 @@ require("dotenv").config();
 // Constants
 const spEndpoint = "https://api.spotify.com/v1/";
 let baseUrl = process.env.PROJECT_DOMAIN || "";
-if (!baseUrl.startsWith("http")) baseUrl = "https://" + baseUrl + ".glitch.me";
+if (!baseUrl.startsWith("http")) baseUrl = `https://${baseUrl}.glitch.me`;
 
-server.listen(process.env.PORT || 3000, () => console.log("Server started on " + baseUrl));
+server.listen(process.env.PORT || 3000, () => console.log(`Server started on ${baseUrl}`));
 
 class SpotifyAPI {
 	_accessTokenTimestamp = 0;
@@ -82,23 +82,23 @@ class SpotifyAPI {
 
 	async handleRefreshToken() {
 		const refresh_token = this.refreshToken;
-	
+
 		const res = await fetch("https://accounts.spotify.com/api/token", {
 			method: "POST",
 			body: new URLSearchParams({
 				grant_type: "refresh_token",
-				refresh_token: refresh_token
+				refresh_token
 			}),
 			headers: { Authorization: `Basic ${(Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`)).toString("base64")}` }
 		});
-			if (res.status === 200) {
-				const body = await res.json();
-				this.accessToken = body.access_token;
-				
-				spotify.getData();
-			} else {
-				console.log("1. Errore nel refresh token: " + res.status);
-			}
+		if (res.status === 200) {
+			const body = await res.json();
+			this.accessToken = body.access_token;
+
+			spotify.getData();
+			return;
+		}
+		console.log(`1. Errore nel refresh token: ${res.status}`);
 	}
 
 	async getData() {
@@ -163,7 +163,12 @@ setInterval(async () => {
 	const newData = await spotify.getData();
 
 	if (newData?.response == 401) return console.log("3. Errore nel refresh token: " + res.status);
-	else if ((spotify?.data?.song_link != newData?.song_link) || (spotify?.data?.song_link == newData?.song_link && spotify?.data?.playing != newData?.playing)) {
+	// or time of newData is greater than the time of spotify.data + 15 seconds
+	else if (
+		(spotify?.data?.song_link != newData?.song_link) ||
+		(spotify?.data?.playing != newData?.playing) ||
+		((spotify?.data?.progress + 15000) < newData?.progress)
+	) {
 		spotify.data = newData;
 		wss.clients.forEach(client => {
 			client.send(JSON.stringify(spotify.data));
@@ -207,8 +212,8 @@ app.get("/log-in", (req, res) => {
 		response_type: "code",
 		client_id: process.env.CLIENT_ID,
 		scope: "user-read-private user-read-email user-read-playback-state user-read-currently-playing user-read-recently-played user-top-read user-read-playback-position",
-		redirect_uri: baseUrl + "/callback",
-		state: (Math.random().toString(36) + "00000000000000000").slice(2, 12 + 2),
+		redirect_uri: `${baseUrl}/callback`,
+		state: (`${Math.random().toString(36)}00000000000000000`).slice(2, 12 + 2),
 	})).toString());
 });
 app.get("/callback", async (req, res) => {
@@ -219,10 +224,10 @@ app.get("/callback", async (req, res) => {
 			method: "POST",
 			body: new URLSearchParams({
 				code,
-				redirect_uri: baseUrl + "/callback",
+				redirect_uri: `${baseUrl}/callback`,
 				grant_type: "authorization_code"
 			}),
-			headers: { Authorization: "Basic " + (Buffer.from(process.env.CLIENT_ID + ":" + process.env.CLIENT_SECRET)).toString("base64"), }
+			headers: { Authorization: `Basic ${(Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`)).toString("base64")}`, }
 		})
 
 		const data = await resp.json();
@@ -239,7 +244,7 @@ app.get("/callback", async (req, res) => {
 
 // SOTD Stuff
 
-let maxSongs = 31;
+const maxSongs = 31;
 
 app.get("/sotd", async (_, res) => {
 	if (!fs.existsSync("./sotd.json")) return handleErrors(res, 404, "No songs of the day");
@@ -270,8 +275,7 @@ app.post("/sotd/remove", async (req, res) => {
 
 function appendToSotd(data) {
 	let songs = 1;
-	if (!fs.existsSync("./sotd.json")) fs.writeFileSync("./sotd.json", JSON.stringify([data]));
-	else {
+	if (fs.existsSync("./sotd.json")) {
 		const sotd = JSON.parse(fs.readFileSync("./sotd.json"));
 		if (sotd.length >= maxSongs) sotd.shift();
 		sotd.push(data);
@@ -279,6 +283,7 @@ function appendToSotd(data) {
 
 		fs.writeFileSync("./sotd.json", JSON.stringify(sotd));
 	}
+	else fs.writeFileSync("./sotd.json", JSON.stringify([data]));
 
 	return { message: `Song added: ${data.name} by ${data.author}, date: ${data.date} with album cover ${data.album}`, songs };
 }
