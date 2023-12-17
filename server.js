@@ -162,12 +162,11 @@ setInterval(async () => {
 
 	const newData = await spotify.getData();
 
-	if (newData?.response == 401) return console.log("3. Errore nel refresh token: " + res.status);
-	// or time of newData is greater than the time of spotify.data + 15 seconds
+	if (newData?.response == 401) return console.log(`3. Errore nel refresh token: ${res.status}`);
 	else if (
 		(spotify?.data?.song_link != newData?.song_link) ||
 		(spotify?.data?.playing != newData?.playing) ||
-		((spotify?.data?.progress + 15000) < newData?.progress)
+		(Math.abs(newData?.progress - spotify?.data?.progress) >= 15000)
 	) {
 		spotify.data = newData;
 		wss.clients.forEach(client => {
