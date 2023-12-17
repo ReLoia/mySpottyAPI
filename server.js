@@ -232,10 +232,8 @@ app.get("/callback", async (req, res) => {
 		const data = await resp.json();
 
 		if (data.error) return handleErrors(res, 400, data.error_description);
-		else {
-			spotify.accessToken = data.access_token;
-			spotify.refreshToken = data.refresh_token;
-		}
+		spotify.accessToken = data.access_token;
+		spotify.refreshToken = data.refresh_token;
 	}
 
 	res.send('<a href="/">Goto home</a>');
