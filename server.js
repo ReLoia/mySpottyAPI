@@ -163,16 +163,19 @@ setInterval(async () => {
 	const newData = await spotify.getData();
 
 	if (newData?.response == 401) return console.log(`3. Errore nel refresh token: ${res.status}`);
-	else if (
+	
+	if (
 		(spotify?.data?.song_link != newData?.song_link) ||
 		(spotify?.data?.playing != newData?.playing) ||
 		(Math.abs(newData?.progress - spotify?.data?.progress) >= 15000)
 	) {
-		spotify.data = newData;
 		wss.clients.forEach(client => {
-			client.send(JSON.stringify(spotify.data));
+			// if the number of clients has changed, send it
+			if (!spotify.data.clients || spotify.data.clients != wss.clients.size) newData.clients = wss.clients.size;
+			client.send(JSON.stringify(newData));
 		});
 	}
+	spotify.data = newData;
 }, 5000);
 
 wss.on("connection", ws => {
