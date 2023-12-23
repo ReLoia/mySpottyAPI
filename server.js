@@ -111,15 +111,15 @@ class SpotifyAPI {
 				try {
 					const json = await response.json();
 					return {
-						author: json.item.artists[0].name,
+						author: json.item?.artists?.[0]?.name,
 						name: json.item.name,
-						song_link: json.item.external_urls.spotify,
+						song_link: json.item?.external_urls?.spotify,
 						duration: json.item.duration_ms,
 						explicit: json.item.explicit,
 						playing: json.is_playing,
-						album_image: json.item.album.images[1].url,
+						album_image: json.item.album?.images?.[1]?.url || "https://upload.wikimedia.org/wikipedia/commons/5/59/Empty.png",
 						progress: json.progress_ms,
-					};
+					}
 				} catch (err) {
 					console.error(err);
 					console.log(response);
