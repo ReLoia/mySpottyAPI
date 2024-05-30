@@ -251,7 +251,7 @@ app.get("/callback", async (req, res) => {
 
 // SOTD Stuff
 
-const maxSongs = 31;
+const maxSongs = Infinity;
 
 app.get("/sotd", async (_, res) => {
 	if (!fs.existsSync("./sotd.json")) return handleErrors(res, 404, "No songs of the day");
@@ -289,6 +289,12 @@ function appendToSotd(data) {
 		songs = sotd.length;
 
 		fs.writeFileSync("./sotd.json", JSON.stringify(sotd));
+
+		if (process.env.WEBHOOK) fetch(`https://discord.com/api/webhooks/1245796818755915816/${process.env.WEBHOOK}`, {
+			method: "POST",
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(sotd)
+		});
 	}
 	else fs.writeFileSync("./sotd.json", JSON.stringify([data]));
 
