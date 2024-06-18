@@ -179,20 +179,42 @@ setInterval(async () => {
 		wss.clients.forEach(client => {
 			// if the number of clients has changed, send it
 			if (!spotify.data.clients || spotify.data.clients != wss.clients.size) newData.clients = wss.clients.size;
+			newData.type = "listening-status";
+
 			client.send(JSON.stringify(newData));
 		});
 	}
 	spotify.data = newData;
 }, 5000);
 
+recentMessages = [];
+oncooldown = [];
+
 wss.on("connection", ws => {
 	const data = { ...spotify.data };
-	data.clients = wss.clients.size;
-	ws.send(JSON.stringify(data));
 
-	// ws.on("message", (message) => {
-	// 	console.log(`Received message from client: ${message}`);
-	// });
+	ws.send(JSON.stringify({ listening: {...data, clients: wss.clients.size }, recentMessages, type: "init" }));
+
+	ws.on("message", (message) => {
+		console.log(`Received message from client: ${message}`);
+		try {
+			const received = JSON.parse(message);
+
+			if (oncooldown.includes(ws)) return;
+			oncooldown.push(ws);
+			setTimeout(() => oncooldown.splice(oncooldown.indexOf(ws), 1), 2500);
+
+			if (received.type == "chat") {
+				Array.from(wss.clients).forEach(client => {
+					recentMessages.push({ username: received.username, message: received.message });
+					setTimeout(() => recentMessages.shift(), 1000 * 60 * 60);
+					client.send(JSON.stringify({ type: "chat", clients: wss.clients.size, username: received.username, message: received.message }));
+				});
+			}
+		} catch (err) {
+			console.error(err);
+		}
+	});
 });
 
 /**
