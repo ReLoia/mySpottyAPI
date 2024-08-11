@@ -202,7 +202,7 @@ wss.on("connection", ws => {
 
 			if (oncooldown.includes(ws)) return;
 			oncooldown.push(ws);
-			setTimeout(() => oncooldown.splice(oncooldown.indexOf(ws), 1), 2500);
+			setTimeout(() => oncooldown.splice(oncooldown.indexOf(ws), 1), 3500);
 
 			if (received.type == "chat") {
 				Array.from(wss.clients).forEach(client => {
@@ -343,6 +343,39 @@ app.post("/sotd", async (req, res) => {
 	if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
 
 	return res.send(appendToSotd({ name, author, date, album }))
+})
+
+// Paint canvas
+// TODO: Add a cooldown to the paint canvas
+let paintCanvas = {
+	// array of { x, y, color }
+	_status: [],
+	// returns the current status of the canvas, if empty, load it from local storage
+	get status() {
+		if (this._status.length == 0) {
+			if (fs.existsSync("./paintcanvas.json")) this._status = JSON.parse(fs.readFileSync("./paintcanvas.json"));
+		}
+		return this._status;
+	},
+	set status(data) {
+		this._status = data;
+		fs.writeFileSync("./paintcanvas.json", JSON.stringify(data));
+	}
+}
+app.get("/paintcanvas/status", async (req, res) => {
+	res.send(paintCanvas.status);
+})
+app.post("/paintcanvas", async (req, res) => {
+	const { x, y, color } = req.body;
+
+	if (x == undefined || y == undefined || color == undefined) return handleErrors(res, 400, 'Missing parameters');
+	if (x < 0 || x > 420 || y < 0 || y > 140) return handleErrors(res, 400, 'Out of bounds');
+
+	// if a pixel is being added before the canvas is loaded, load it
+	if (paintCanvas.status.length == 0) paintCanvas.status;
+
+	paintCanvas.status.push({ x, y, color });
+	res.send({ message: "Pixel added" });
 })
 
 // Widgets
