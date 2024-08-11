@@ -1,0 +1,18 @@
+### Get the canvas
+GET http://localhost:3000/paintcanvas/status
+Accept: application/json
+
+
+
+### Paint a pixel on the canvas
+POST http://localhost:3000/paintcanvas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "x": 1,
+  "y": 1,
+  "color": "red"
+}
+
+###
