@@ -394,22 +394,25 @@ let paintCanvas = {
 app.get("/paintcanvas/status", async (req, res) => {
     res.send(paintCanvas.status);
 })
+/**
+ * Paint a pixel in the canvas with the specified color using the index calculated in the frontend.
+ */
 app.post("/paintcanvas", async (req, res) => {
     const {x, y, color} = req.body;
     console.log(req.body);
 
     if (x == undefined || y == undefined || color == undefined) return handleErrors(res, 400, 'Missing parameters');
-    if (x < 0 || x > 420 || y < 0 || y > 140) return handleErrors(res, 400, 'Out of bounds');
+    if (x < 0 || x > 30 || y < 0 || y > 10) return handleErrors(res, 400, 'Out of bounds');
 
     // if a pixel is being added before the canvas is loaded, load it
     if (!paintCanvas.loaded) paintCanvas.status;
 
-    paintCanvas.status[(y / 14) * 30 + (x / 14)] = {x, y, color};
+    paintCanvas.status[y * 30 + x] = {x: x * 14, y: y * 14, color};
 
     fs.writeFileSync("./paintcanvas.json", JSON.stringify(paintCanvas.status));
 
     Array.from(wss.clients).forEach(client => {
-        client.send(JSON.stringify({type: "paintcanvas", x, y, color}));
+        client.send(JSON.stringify({type: "paintcanvas", x: x * 14, y: y * 14, color}));
     });
     res.send({message: "Pixel added"});
 })
