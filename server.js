@@ -407,12 +407,12 @@ app.post("/paintcanvas", async (req, res) => {
     // if a pixel is being added before the canvas is loaded, load it
     if (!paintCanvas.loaded) paintCanvas.status;
 
-    paintCanvas.status[y * 30 + x] = {x: x * 14, y: y * 14, color};
+    paintCanvas.status[y * 30 + x] = {x: x, y: y, color};
 
     fs.writeFileSync("./paintcanvas.json", JSON.stringify(paintCanvas.status));
 
     Array.from(wss.clients).forEach(client => {
-        client.send(JSON.stringify({type: "paintcanvas", x: x * 14, y: y * 14, color}));
+        client.send(JSON.stringify({type: "paintcanvas", x: x, y: y, color}));
     });
     res.send({message: "Pixel added"});
 })
