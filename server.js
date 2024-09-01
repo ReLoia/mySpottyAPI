@@ -215,9 +215,9 @@ wss.on("connection", ws => {
             setTimeout(() => oncooldown.splice(oncooldown.indexOf(ws), 1), 2500);
 
             if (received.type == "chat") {
+                recentMessages.push({username: received.username, message: received.message});
+                setTimeout(() => recentMessages.shift(), 1000 * 60 * 60);
                 Array.from(wss.clients).forEach(client => {
-                    recentMessages.push({username: received.username, message: received.message});
-                    setTimeout(() => recentMessages.shift(), 1000 * 60 * 60);
                     client.send(JSON.stringify({
                         type: "chat",
                         clients: wss.clients.size,
