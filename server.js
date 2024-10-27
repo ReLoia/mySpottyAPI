@@ -27,6 +27,8 @@ const spEndpoint = "https://api.spotify.com/v1/";
 let baseUrl = process.env.PROJECT_DOMAIN || "";
 if (!baseUrl.startsWith("http")) baseUrl = `https://${baseUrl}.glitch.me`;
 
+if (baseUrl.startsWith("https://.glitch")) throw new Error("The project domain is not set, please set it in the .env file");
+
 server.listen(process.env.PORT || 3000, () => console.log(`Server started on ${baseUrl}\nAlternatively on http://localhost:${process.env.PORT || 3000}`));
 
 class SpotifyAPI {
