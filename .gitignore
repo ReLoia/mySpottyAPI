@@ -4,3 +4,6 @@
 /pnpm-lock.yaml
 test.js
 /sotd.json
+api-test.http
+nodemon.json
+data

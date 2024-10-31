@@ -1,178 +1,45 @@
 // Server Requirements
-const express = require("express");
+import {SpotifyAPI} from "./spotifyAPI.js";
+
+import express from "express";
 const app = express();
 
-const canvas = require('canvas');
+import canvas from "canvas";
 const {createCanvas, loadImage} = canvas;
 
 app.use(express.json());
-app.use(require("cors")());
+import cors from "cors";
+
+app.use(cors());
 app.use((req, res, next) => {
     console.log(`[${req.method}] [${new Date().toLocaleString("it")}] ${req.url}`)
     next();
 })
 
 // Websocket stuff
-const server = require("http").createServer(app);
-const WebSocket = require("ws");
-const wss = new WebSocket.Server({server});
+import http from "http";
+const server = http.createServer(app);
+
+import { WebSocketServer } from "ws";
+
+const wss = new WebSocketServer({server});
+
+// const wss = new WebSocket.Server({server});
 
 // Other requirements
-const fetch = require("node-fetch").default;
-const fs = require('fs');
-require("dotenv").config();
+// const fetch = require("node-fetch").default;
+import fs from "fs";
+import dotenv from "dotenv";
+dotenv.config()
 
 // Constants
-const spEndpoint = "https://api.spotify.com/v1/";
+
 let baseUrl = process.env.PROJECT_DOMAIN || "";
 if (!baseUrl.startsWith("http")) baseUrl = `https://${baseUrl}.glitch.me`;
 
 if (baseUrl.startsWith("https://.glitch")) throw new Error("The project domain is not set, please set it in the .env file");
 
 server.listen(process.env.PORT || 3000, () => console.log(`Server started on ${baseUrl}\nAlternatively on http://localhost:${process.env.PORT || 3000}`));
-
-class SpotifyAPI {
-    _accessTokenTimestamp = 0;
-    loadedDataJSON = false;
-
-    data = {
-        author: "loading",
-        name: "Please wait...",
-        song_link: "",
-        duration: 0,
-        playing: false,
-        album_name: "loading",
-        album_image: "https://upload.wikimedia.org/wikipedia/commons/5/59/Empty.png",
-        explicit: false,
-        progress: 0
-    };
-
-    get accessToken() {
-        if (this._accessToken == "") this.handleRefreshToken();
-        if (Date.now() > (this._accessTokenTimestamp + 3600000) && this._refreshtoken) this.handleRefreshToken();
-
-        return this._accessToken;
-    }
-
-    set accessToken(access_token) {
-        this._accessTokenTimestamp = Date.now();
-        this._accessToken = access_token;
-    }
-
-    get refreshToken() {
-        if (this._refreshtoken == "") return console.log("Non c'è un refresh token A") && false;
-
-        return this._refreshtoken;
-    }
-
-    set refreshToken(refresh_token) {
-        this._refreshtoken = refresh_token;
-
-        if (!this.loadedDataJSON) {
-            this.loadedDataJSON = true;
-            fs.writeFileSync('./data.json', `{ "refresh_token": "${refresh_token}" }`);
-        }
-    }
-
-    constructor() {
-        if (fs.existsSync("./data.json")) {
-            this.loadedDataJSON = true;
-            const datas = JSON.parse(fs.readFileSync("./data.json"));
-
-            this.refreshToken = datas.refresh_token;
-        }
-    }
-
-    async makeRequest(endpoint) {
-        return await fetch(spEndpoint + endpoint, {
-            headers: {Authorization: `Bearer ${this.accessToken}`}
-        })
-    }
-
-    async handleRefreshToken() {
-        const refresh_token = this.refreshToken;
-
-        const res = await fetch("https://accounts.spotify.com/api/token", {
-            method: "POST",
-            body: new URLSearchParams({
-                grant_type: "refresh_token",
-                refresh_token
-            }),
-            headers: {Authorization: `Basic ${(Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`)).toString("base64")}`}
-        });
-        if (res.status === 200) {
-            const body = await res.json();
-            this.accessToken = body.access_token;
-
-            spotify.getData();
-            return;
-        }
-        const text = await res.text();
-        console.log(`1. Errore nel refresh token: ${res.status}`, text);
-        const json = JSON.parse(text);
-        if (json.error == "invalid_grant") {
-            console.log("The grant has expired, deleting the refresh token!");
-            fs.unlink("./data.json", () => {
-                console.log("Deleted!");
-            });
-        }
-    }
-
-    async getData() {
-        if (!this.accessToken) await this.handleRefreshToken();
-
-        if (this.accessToken) {
-            let response = await this.makeRequest("me/player/currently-playing");
-
-            if (response.status == 200) { // Current playing
-                try {
-                    const json = await response.json();
-                    return {
-                        author: json.item?.artists?.[0]?.name,
-                        name: json.item.name,
-                        song_link: json.item?.external_urls?.spotify,
-                        duration: json.item.duration_ms,
-                        explicit: json.item.explicit,
-                        playing: json.is_playing,
-                        album_name: json.item.album?.name,
-                        album_image: json.item.album?.images?.[1]?.url || "https://upload.wikimedia.org/wikipedia/commons/5/59/Empty.png",
-                        progress: json.progress_ms,
-                    }
-                } catch (err) {
-                    console.error(err);
-                    console.log(response);
-                }
-            } else if (response.status == 204) { // Last played
-                response = await this.makeRequest("me/player/recently-played?limit=1");
-                const json = await response.json();
-
-                try {
-                    return {
-                        author: json.items[0].track.artists[0].name,
-                        name: json.items[0].track.name,
-                        song_link: json.items[0].track.external_urls.spotify,
-                        duration: json.items[0].track.duration_ms,
-                        explicit: json.items[0].track.explicit,
-                        playing: false, // Obviously it is false because it was previously playing
-                        album_name: json.items[0].track.album.name,
-                        album_image: json.items[0].track.album.images[1].url,
-                        progress: 0,
-                    };
-                } catch (err) {
-                    console.error(err);
-                    console.log(response);
-                }
-            } else if (response.status == 401) {
-                await this.handleRefreshToken();
-                return {
-                    response: 401,
-                }
-            }
-        } else {
-            console.error("Non c'è un token");
-        }
-    }
-}
 
 const spotify = new SpotifyAPI();
 
@@ -199,8 +66,8 @@ setInterval(async () => {
     spotify.data = newData;
 }, 5000);
 
-recentMessages = [];
-oncooldown = [];
+let recentMessages = [];
+let oncooldown = [];
 
 wss.on("connection", ws => {
     const data = {...spotify.data};
@@ -278,9 +145,13 @@ app.get("/callback", async (req, res) => {
             headers: {Authorization: `Basic ${(Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`)).toString("base64")}`,}
         })
 
-        const data = await resp.json();
+        console.log(resp.status);
+        const text = await resp.text();
 
-        if (data.error) return handleErrors(res, 400, data.error_description);
+        // const data = await resp.json();
+        const data = JSON.parse(text);
+
+        if (data.error) return handleErrors(res, 400, "The server has given the erorr: " + data.error_description);
         spotify.accessToken = data.access_token;
         spotify.refreshToken = data.refresh_token;
     }
@@ -293,15 +164,15 @@ app.get("/callback", async (req, res) => {
 const maxSongs = Infinity;
 
 app.get("/sotd", async (_, res) => {
-    if (!fs.existsSync("./sotd.json")) return handleErrors(res, 204, "No songs of the day");
-    const data = JSON.parse(fs.readFileSync("./sotd.json")).reverse();
+    if (!fs.existsSync("./data/sotd.json")) return handleErrors(res, 204, "No songs of the day");
+    const data = JSON.parse(fs.readFileSync("./data/sotd.json")).reverse();
     res.send(data);
 })
 app.post("/sotd/clear", async (req, res) => {
     if (!code) return handleErrors(res, 400, 'Missing parameters');
-    if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
 
-    fs.writeFileSync("./sotd.json", "[]");
+    fs.writeFileSync("./data/sotd.json", "[]");
 
     res.send({message: "Songs cleared"});
 })
@@ -309,33 +180,33 @@ app.post("/sotd/remove", async (req, res) => {
     const {index} = req.body;
 
     if (index == undefined) return handleErrors(res, 400, 'Missing parameters');
-    if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
 
-    const sotd = JSON.parse(fs.readFileSync("./sotd.json"));
+    const sotd = JSON.parse(fs.readFileSync("./data/sotd.json"));
 
     if (index < 0 || index > sotd.length) return handleErrors(res, 400, "Index out of range");
     sotd.splice(index, 1);
-    fs.writeFileSync("./sotd.json", JSON.stringify(sotd));
+    fs.writeFileSync("./data/sotd.json", JSON.stringify(sotd));
 
     res.send({message: `Song removed`});
 })
 
 function appendToSotd(data) {
     let songs = 1;
-    if (fs.existsSync("./sotd.json")) {
-        const sotd = JSON.parse(fs.readFileSync("./sotd.json"));
+    if (fs.existsSync("./data/sotd.json")) {
+        const sotd = JSON.parse(fs.readFileSync("./data/sotd.json"));
         if (sotd.length >= maxSongs) sotd.shift();
         sotd.push(data);
         songs = sotd.length;
 
-        fs.writeFileSync("./sotd.json", JSON.stringify(sotd));
+        fs.writeFileSync("./data/sotd.json", JSON.stringify(sotd));
 
         if (process.env.WEBHOOK) fetch(`https://discord.com/api/webhooks/1245796818755915816/${process.env.WEBHOOK}`, {
             method: "POST",
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(sotd)
         });
-    } else fs.writeFileSync("./sotd.json", JSON.stringify([data]));
+    } else fs.writeFileSync("./data/sotd.json", JSON.stringify([data]));
 
     return {
         message: `Song added: ${data.name} by ${data.author}, date: ${data.date} with album cover ${data.album}`,
@@ -347,7 +218,7 @@ app.post("/sotd/url", async (req, res) => {
     const {url} = req.body;
 
     if (!url) return handleErrors(res, 400, 'Missing parameters');
-    if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
 
     const it = new URL(url).pathname;
     const response = await spotify.makeRequest(`tracks/${it.slice(it.lastIndexOf("/") + 1)}?market=IT`)
@@ -366,7 +237,7 @@ app.post("/sotd", async (req, res) => {
     const {name, author, date, album} = req.body;
 
     if (!name || !author || !date || !album) return handleErrors(res, 400, 'Missing parameters');
-    if (req.headers.authorization !== process.env.CODE) return handleErrors(res, 401, "Wrong code");
+    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
 
     return res.send(appendToSotd({name, author, date, album}))
 })
@@ -374,14 +245,13 @@ app.post("/sotd", async (req, res) => {
 // Paint canvas
 // TODO: Add a cooldown to the paint canvas
 let paintCanvas = {
-// array of { x, y, color }
     loaded: false,
     _status: new Array(300),
 // returns the current status of the canvas, if empty, load it from local storage
     get status() {
         if (!this.loaded) {
-            if (fs.existsSync("./paintcanvas.json")) this._status = JSON.parse(fs.readFileSync("./paintcanvas.json"));
-            else fs.writeFileSync("./paintcanvas.json", JSON.stringify(this._status));
+            if (fs.existsSync("./data/paintcanvas.json")) this._status = JSON.parse(fs.readFileSync("./data/paintcanvas.json"));
+            else fs.writeFileSync("./data/paintcanvas.json", JSON.stringify(this._status));
 
             this.loaded = true;
         }
@@ -390,7 +260,7 @@ let paintCanvas = {
     set status(data) {
         this._status = data;
         // console.log("Data updated", data);
-        // fs.writeFileSync("./paintcanvas.json", JSON.stringify(data));
+        // fs.writeFileSync("./data/paintcanvas.json", JSON.stringify(data));
     }
 }
 app.get("/paintcanvas/status", async (req, res) => {
@@ -401,7 +271,6 @@ app.get("/paintcanvas/status", async (req, res) => {
  */
 app.post("/paintcanvas", async (req, res) => {
     const {x, y, color} = req.body;
-    console.log(req.body);
 
     if (x == undefined || y == undefined || color == undefined) return handleErrors(res, 400, 'Missing parameters');
     if (x < 0 || x > 30 || y < 0 || y > 10) return handleErrors(res, 400, 'Out of bounds');
@@ -411,7 +280,7 @@ app.post("/paintcanvas", async (req, res) => {
 
     paintCanvas.status[y * 30 + x] = {x: x, y: y, color};
 
-    fs.writeFileSync("./paintcanvas.json", JSON.stringify(paintCanvas.status));
+    fs.writeFileSync("./data/paintcanvas.json", JSON.stringify(paintCanvas.status));
 
     Array.from(wss.clients).forEach(client => {
         client.send(JSON.stringify({type: "paintcanvas", x: x, y: y, color}));
