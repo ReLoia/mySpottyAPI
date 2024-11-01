@@ -48,7 +48,7 @@ setInterval(async () => {
 
     const newData = await spotify.getData();
 
-    if (newData?.response == 401) return console.log(`3. Errore nel refresh token: ${res.status}`);
+    if (newData?.response == 401) return console.log(`3. Errore nel refresh token: ${newData?.status}`);
 
     if (
         (spotify?.data?.song_link != newData?.song_link) ||

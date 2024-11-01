@@ -74,7 +74,7 @@ export class SpotifyAPI {
             const body = await res.json();
             this.accessToken = body.access_token;
 
-            spotify.getData();
+            await this.getData();
             return;
         }
         const text = await res.text();
@@ -136,6 +136,7 @@ export class SpotifyAPI {
                 await this.handleRefreshToken();
                 return {
                     response: 401,
+                    status: response.status
                 }
             }
         } else {
