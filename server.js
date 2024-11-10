@@ -48,7 +48,7 @@ setInterval(async () => {
 
     const newData = await spotify.getData();
 
-    if (newData?.response == 401) return console.log(`3. Errore nel refresh token: ${newData?.status}`);
+    if (newData?.status == 401) return console.log(`3. Errore nel refresh token: ${newData?.status}`, newData.response);
 
     if (
         (spotify?.data?.song_link != newData?.song_link) ||
@@ -299,6 +299,7 @@ function formatMS(ms) {
 const canva = createCanvas(356, 110);
 const ctx = canva.getContext('2d');
 app.get('/widgets/listening', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     while (spotify.data.name == "Please wait...") await new Promise(r => setTimeout(r, 1000));
 
     function evaluateColor(color) {

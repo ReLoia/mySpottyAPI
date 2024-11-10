@@ -14,3 +14,4 @@ services:
           CLIENT_SECRET:
           WEBHOOK:
           SECRET:
+        restart: always

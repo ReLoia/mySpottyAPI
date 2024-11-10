@@ -114,7 +114,14 @@ export class SpotifyAPI {
                 }
             } else if (response.status == 204) { // Last played
                 response = await this.makeRequest("me/player/recently-played?limit=1");
-                const json = await response.json();
+                let json;
+                try {
+                    json = await response.json()
+                } catch (err) {
+                    console.error(err);
+                    console.log(response);
+                    await this.handleRefreshToken();
+                }
 
                 try {
                     return {
@@ -135,8 +142,8 @@ export class SpotifyAPI {
             } else if (response.status == 401) {
                 await this.handleRefreshToken();
                 return {
-                    response: 401,
-                    status: response.status
+                    status: 401,
+                    response
                 }
             }
         } else {
