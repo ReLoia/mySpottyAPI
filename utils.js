@@ -19,3 +19,10 @@ export function handleErrors(res, err, message) {
         message
     });
 }
+
+export function formatMS(ms) {
+    let tmp = new Date(ms)
+    const fixNum = (n) => String(n).length == 1 ? '0' + n : n;
+
+    return `${tmp.getUTCHours() > 0 ? `${tmp.getUTCHours()}:` : ''}${fixNum(tmp.getMinutes())}:${fixNum(tmp.getSeconds())}`;
+}
