@@ -1,3 +1,13 @@
+// Base Requirements
+import dotenv from "dotenv";
+dotenv.config();
+
+import fs from "fs";
+import {getBaseURL, handleErrors} from "./utils.js";
+
+// Constants
+const BASE_URL = getBaseURL();
+
 // Server Requirements
 import {SpotifyAPI} from "./spotifyAPI.js";
 
@@ -21,28 +31,14 @@ import http from "http";
 const server = http.createServer(app);
 
 import { WebSocketServer } from "ws";
-
 const wss = new WebSocketServer({server});
 
-// const wss = new WebSocket.Server({server});
 
-// Other requirements
-// const fetch = require("node-fetch").default;
-import fs from "fs";
-import dotenv from "dotenv";
-dotenv.config()
-
-// Constants
-
-let baseUrl = process.env.PROJECT_DOMAIN || "";
-if (!baseUrl.startsWith("http")) baseUrl = `https://${baseUrl}.glitch.me`;
-
-if (baseUrl.startsWith("https://.glitch")) throw new Error("The project domain is not set, please set it in the .env file");
-
-server.listen(process.env.PORT || 3000, () => console.log(`Server started on ${baseUrl}\nAlternatively on http://localhost:${process.env.PORT || 3000}`));
+server.listen(process.env.PORT || 3000, () => console.log(`Server started on ${BASE_URL}\nAlternatively on http://localhost:${process.env.PORT || 3000}`));
 
 const spotify = new SpotifyAPI();
 
+// Main app Loop
 setInterval(async () => {
     if (!spotify.refreshToken) return console.log("Non c'è un refresh token");
 
@@ -67,7 +63,7 @@ setInterval(async () => {
 }, 5000);
 
 let recentMessages = [];
-let oncooldown = [];
+let onCooldown = [];
 
 wss.on("connection", ws => {
     const data = {...spotify.data};
@@ -79,9 +75,9 @@ wss.on("connection", ws => {
         try {
             const received = JSON.parse(message);
 
-            if (oncooldown.includes(ws)) return;
-            oncooldown.push(ws);
-            setTimeout(() => oncooldown.splice(oncooldown.indexOf(ws), 1), 2500);
+            if (onCooldown.includes(ws)) return;
+            onCooldown.push(ws);
+            setTimeout(() => onCooldown.splice(onCooldown.indexOf(ws), 1), 2500);
 
             if (received.type == "chat") {
                 recentMessages.push({username: received.username, message: received.message});
@@ -101,20 +97,7 @@ wss.on("connection", ws => {
     });
 });
 
-/**
- *
- * @param {Response} res
- * @param {Number} err
- * @param {String} message
- */
-const handleErrors = (res, err, message) => {
-    res.status(err).send({
-        code: err,
-        message
-    });
-}
-
-app.get("/", (req, res) => handleErrors(res, 200, `You shouldn't be here... Please go to https://reloia.github.io/ or the api endpoint : ${baseUrl}/api`));
+app.get("/", (req, res) => handleErrors(res, 200, `You shouldn't be here... Please go to https://reloia.github.io/ or the api endpoint : ${BASE_URL}/api`));
 app.get("/api", async (_, res) => {
     if (!spotify.accessToken) return handleErrors(res, 401, "Not logged in to Spotify or the Refresh Token has expired");
     res.send(spotify.data);
@@ -127,10 +110,11 @@ app.get("/log-in", (req, res) => {
         response_type: "code",
         client_id: process.env.CLIENT_ID,
         scope: "user-read-private user-read-email user-read-playback-state user-read-currently-playing user-read-recently-played user-top-read user-read-playback-position",
-        redirect_uri: `${baseUrl}/callback`,
+        redirect_uri: `${BASE_URL}/callback`,
         state: (`${Math.random().toString(36)}00000000000000000`).slice(2, 12 + 2),
     })).toString());
 });
+
 app.get("/callback", async (req, res) => {
     const code = req.query.code;
 
@@ -139,7 +123,7 @@ app.get("/callback", async (req, res) => {
             method: "POST",
             body: new URLSearchParams({
                 code,
-                redirect_uri: `${baseUrl}/callback`,
+                redirect_uri: `${BASE_URL}/callback`,
                 grant_type: "authorization_code"
             }),
             headers: {Authorization: `Basic ${(Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`)).toString("base64")}`,}
@@ -160,7 +144,6 @@ app.get("/callback", async (req, res) => {
 });
 
 // SOTD Stuff
-
 const maxSongs = Infinity;
 
 app.get("/sotd", async (_, res) => {
