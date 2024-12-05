@@ -6,12 +6,18 @@ import {getBaseURL, handleErrors} from "./utils.js";
 import {SpotifyAPI} from "./spotifyAPI.js";
 
 import express from "express";
-import canvas from "canvas";
+
 import cors from "cors";
 // Websocket stuff
 import http from "http";
 import {WebSocketServer} from "ws";
-import {listeningWidget} from "./listeningWidget.js";
+
+// Widgets
+import {listeningWidget} from "./widgets/listeningWidget.js";
+
+// Plugins
+import {PaintCanvas} from "./plugins/paintCanvas.js";
+import {SOTD} from "./plugins/sotd.js";
 
 dotenv.config();
 
@@ -19,8 +25,6 @@ dotenv.config();
 const BASE_URL = getBaseURL();
 
 const app = express();
-
-const {createCanvas, loadImage} = canvas;
 
 app.use(express.json());
 
@@ -145,132 +149,23 @@ app.get("/callback", async (req, res) => {
 });
 
 // SOTD Stuff
-const maxSongs = Infinity;
+const sotd = new SOTD(spotify);
 
-app.get("/sotd", async (_, res) => {
-    if (!fs.existsSync("./data/sotd.json")) return handleErrors(res, 204, "No songs of the day");
-    const data = JSON.parse(fs.readFileSync("./data/sotd.json")).reverse();
-    res.send(data);
-})
-app.post("/sotd/clear", async (req, res) => {
-    if (!code) return handleErrors(res, 400, 'Missing parameters');
-    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
+app.get("/sotd", sotd.get);
+app.post("/sotd/clear", sotd.clear);
+app.post("/sotd/remove", sotd.remove);
+app.post("/sotd/url", sotd.url);
+app.post("/sotd", sotd.post);
 
-    fs.writeFileSync("./data/sotd.json", "[]");
+// PaintCanvas canvas
+const paintCanvas = new PaintCanvas(wss);
 
-    res.send({message: "Songs cleared"});
-})
-app.post("/sotd/remove", async (req, res) => {
-    const {index} = req.body;
+app.get("/paintcanvas/status", paintCanvas.sendStatus);
 
-    if (index == undefined) return handleErrors(res, 400, 'Missing parameters');
-    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
-
-    const sotd = JSON.parse(fs.readFileSync("./data/sotd.json"));
-
-    if (index < 0 || index > sotd.length) return handleErrors(res, 400, "Index out of range");
-    sotd.splice(index, 1);
-    fs.writeFileSync("./data/sotd.json", JSON.stringify(sotd));
-
-    res.send({message: `Song removed`});
-})
-
-function appendToSotd(data) {
-    let songs = 1;
-    if (fs.existsSync("./data/sotd.json")) {
-        const sotd = JSON.parse(fs.readFileSync("./data/sotd.json"));
-        if (sotd.length >= maxSongs) sotd.shift();
-        sotd.push(data);
-        songs = sotd.length;
-
-        fs.writeFileSync("./data/sotd.json", JSON.stringify(sotd));
-
-        if (process.env.WEBHOOK) fetch(`https://discord.com/api/webhooks/1245796818755915816/${process.env.WEBHOOK}`, {
-            method: "POST",
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(sotd)
-        });
-    } else fs.writeFileSync("./data/sotd.json", JSON.stringify([data]));
-
-    return {
-        message: `Song added: ${data.name} by ${data.author}, date: ${data.date} with album cover ${data.album}`,
-        songs
-    };
-}
-
-app.post("/sotd/url", async (req, res) => {
-    const {url} = req.body;
-
-    if (!url) return handleErrors(res, 400, 'Missing parameters');
-    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
-
-    const it = new URL(url).pathname;
-    const response = await spotify.makeRequest(`tracks/${it.slice(it.lastIndexOf("/") + 1)}?market=IT`)
-    if (response.status !== 200) return handleErrors(res, 500, "The server is not responding correctly");
-
-    const json = await response.json()
-
-    return res.send(appendToSotd({
-        name: json.name,
-        author: json.artists.map(a => a.name).join(", "),
-        date: Date.now(),
-        album: json.album.images[0].url
-    }))
-})
-app.post("/sotd", async (req, res) => {
-    const {name, author, date, album} = req.body;
-
-    if (!name || !author || !date || !album) return handleErrors(res, 400, 'Missing parameters');
-    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
-
-    return res.send(appendToSotd({name, author, date, album}))
-})
-
-// Paint canvas
-// TODO: Add a cooldown to the paint canvas
-let paintCanvas = {
-    loaded: false,
-    _status: new Array(300),
-    // returns the current status of the canvas, if empty, load it from local storage
-    get status() {
-        if (!this.loaded) {
-            if (fs.existsSync("./data/paintcanvas.json")) this._status = JSON.parse(fs.readFileSync("./data/paintcanvas.json"));
-            else fs.writeFileSync("./data/paintcanvas.json", JSON.stringify(this._status));
-
-            this.loaded = true;
-        }
-        return this._status;
-    },
-    set status(data) {
-        this._status = data;
-        // console.log("Data updated", data);
-        // fs.writeFileSync("./data/paintcanvas.json", JSON.stringify(data));
-    }
-}
-app.get("/paintcanvas/status", async (req, res) => {
-    res.send(paintCanvas.status);
-})
 /**
- * Paint a pixel in the canvas with the specified color using the index calculated in the frontend.
+ * PaintCanvas a pixel in the canvas with the specified color using the index calculated in the frontend.
  */
-app.post("/paintcanvas", async (req, res) => {
-    const {x, y, color} = req.body;
-
-    if (x == undefined || y == undefined || color == undefined) return handleErrors(res, 400, 'Missing parameters');
-    if (x < 0 || x > 30 || y < 0 || y > 10) return handleErrors(res, 400, 'Out of bounds');
-
-    // if a pixel is being added before the canvas is loaded, load it
-    if (!paintCanvas.loaded) paintCanvas.status;
-
-    paintCanvas.status[y * 30 + x] = {x: x, y: y, color};
-
-    fs.writeFileSync("./data/paintcanvas.json", JSON.stringify(paintCanvas.status));
-
-    Array.from(wss.clients).forEach(client => {
-        client.send(JSON.stringify({type: "paintcanvas", x: x, y: y, color}));
-    });
-    res.send({message: "Pixel added"});
-})
+app.post("/paintcanvas", paintCanvas.post);
 
 // Widgets
 app.get('/widgets/listening', (req, res) => listeningWidget(req, res, spotify));

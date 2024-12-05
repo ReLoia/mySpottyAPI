@@ -1,5 +1,5 @@
 import {createCanvas, loadImage} from "canvas";
-import {formatMS} from "./utils.js";
+import {formatMS} from "../utils.js";
 
 const canva = createCanvas(356, 110);
 const ctx = canva.getContext('2d');

@@ -54,6 +54,8 @@ export class SpotifyAPI {
     }
 
     async makeRequest(endpoint) {
+        if (!this.accessToken) await this.handleRefreshToken();
+
         return await fetch(this.spEndpoint + endpoint, {
             headers: {Authorization: `Bearer ${this.accessToken}`}
         })
