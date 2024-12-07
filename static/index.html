@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #191919;
+            color: #cdcdcd;
+            font-family: Arial, sans-serif;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            margin: 0;
+            min-height: 100vh;
+            padding: 10px 10px 100px;
+
+            @media screen and (min-width: 1000px) {
+                & > div:not(:first-of-type) {
+                    margin-top: -100px;
+                }
+            }
+
+            & > figure {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+
+                height: 200px;
+
+                & > figcaption {
+                    margin-top: 8px;
+                    font-size: .85rem;
+                }
+            }
+        }
+
+        i {
+            all: unset;
+        }
+
+        a {
+            color: inherit;
+            position: relative;
+            z-index: 10;
+        }
+
+        .spotify {
+            color: #1db954;
+
+            & > a {
+                font-weight: bold;
+                cursor: pointer;
+
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+
+        h1, p {
+            margin: 0;
+        }
+
+        .listenApi {
+            margin-top: 12px;
+            width: 100%;
+            max-width: 1300px;
+
+            & > h2 {
+                margin-bottom: 1rem;
+            }
+
+            & > p {
+                margin-bottom: 1rem;
+            }
+        }
+
+        .listeningWidget {
+            width: 100%;
+            max-width: 1300px;
+            text-align: right;
+
+            & > h3 {
+                margin-bottom: 2rem;
+            }
+        }
+
+        .sotd {
+            width: 100%;
+            max-width: 1300px;
+
+            & > h3 {
+                margin-bottom: 2rem;
+            }
+        }
+
+        .paintCanvas {
+            width: 100%;
+            max-width: 1300px;
+            text-align: right;
+
+            & > h3 {
+                margin-bottom: 2rem;
+            }
+        }
+
+    </style>
+    <title>reloia_listen</title>
+</head>
+<body>
+<h1>reloia_listen</h1>
+<p>real time listening status <i class="spotify">based on <a href="https://developer.spotify.com/">Spotify</a></i></p>
+<figure>
+    <img src="https://reloia.ddns.net/reloia_listen/widgets/listening" alt="">
+    <figcaption>real time listening status image - try reloading the page!</figcaption>
+</figure>
+
+<h2>What can this server do?</h2>
+
+<div class="listenApi">
+    <h3>The listening API</h3>
+    <img src="https://cloud-clbdv2bwd-hack-club-bot.vercel.app/0screen_shot_2024-12-05_at_21.04.05.png" alt="listening API">
+    <p>A simpler api that makes it easy to know what the current or last song is.</p>
+    <br>
+    <code>GET <a href="/api">/api/</a></code>
+    <p>Get the currently played song</p>
+
+    <script>
+        async function getCurrentlyPlayedSong() {
+            const res = await fetch('/api');
+            const data = await res.json();
+            document.querySelector('pre').innerText = JSON.stringify(data, null, 2);
+        }
+
+        getCurrentlyPlayedSong()
+        setInterval(getCurrentlyPlayedSong, 5000);
+
+    </script>
+
+    <pre></pre>
+    <p>To see a better usage of this API go to <a href="https://reloia.github.io/">reloia.github.io</a></p>
+</div>
+
+<div class="listeningWidget">
+    <h3>Generate an image to put on any website</h3>
+    <p>Like the one you can see at the top of the page!</p>
+    <br>
+    <p>That shows your currently played song.</p>
+    <p>To generate the image, you need to put the url to the widget's endpoint.</p>
+    <br>
+    <p>The widget is generated using JavaScript Canvas (Node.js)</p>
+    <br><br>
+    It can also be customized with the following query parameters:<br>
+    <code>backgroundColor</code> - the background color of the widget<br>
+    <code>barColor</code> - the color of the bar that separates the image from the text<br>
+    <code>barBackgroundColor</code> - the color of the bar's background<br>
+    <code>borderRadius</code> - the border radius of the widget<br><br>
+    <code>The widget's endpoint is <a href="/widgets/listening">/widgets/listening</a></code>
+</div>
+
+<div class="sotd">
+    <h3>the Song of the Day</h3>
+    <img src="https://cloud-2pi97pnk7-hack-club-bot.vercel.app/0screen_shot_2024-12-05_at_20.58.17.png" alt="sotd" width="600">
+    <p>An API widget that allows to store your favorite songs with date and other info.</p>
+    <p>It can be used to show the song of the day on your website, and it saves them in a file</p><br>
+
+    <code>GET <a href="/sotd">/sotd/</a></code>
+    <p>Get the song of the day</p>
+    <br>
+    <b>The following requires an Authentication header</b><br><br>
+
+    <code>POST <a href="/sotd/clear">/sotd/clear</a></code>
+    <p>Clear the song list</p><br>
+
+    <code>POST <a href="/sotd">/sotd/</a></code>
+    <p>Post a new song of the day</p><br>
+
+    <code>POST <a href="/sotd/url">/sotd/url</a></code>
+    <p>Post a new song of the day with an url</p><br>
+
+    <code>POST <a href="/sotd/remove">/sotd/remove</a></code>
+    <p>Remove a song of the day at a certain index</p>
+</div>
+
+<div class="paintCanvas">
+    <h3>Paint Canvas</h3>
+    <img src="https://cloud-bk4xtb7zj-hack-club-bot.vercel.app/0image.png" alt="canvas">
+    <p>A canvas that works using pixel stored as single objects of an array.</p>
+    <br>
+    <code>GET <a href="/paintcanvas/status">/paintcanvas/status</a></code>
+    <p>Get the paint canvas' current status</p>
+    <br>
+    <code>POST <a href="/paintcanvas">/paintcanvas</a></code>
+    <p>Update a pixel on the canvas</p>
+</div>
+All of this works with Node.js and Spotify's API.
+</body>
+</html>

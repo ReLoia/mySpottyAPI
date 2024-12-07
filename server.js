@@ -102,7 +102,9 @@ wss.on("connection", ws => {
     });
 });
 
-app.get("/", (req, res) => handleErrors(res, 200, `You shouldn't be here... Please go to https://reloia.github.io/ or the api endpoint : ${BASE_URL}/api`));
+// app.get("/", (req, res) => handleErrors(res, 200, `You shouldn't be here... Please go to https://reloia.github.io/ or the api endpoint : ${BASE_URL}/api`));
+app.get("/", (req, res) => res.send(fs.readFileSync("./static/index.html").toString()));
+
 app.get("/api", async (_, res) => {
     if (!spotify.accessToken) return handleErrors(res, 401, "Not logged in to Spotify or the Refresh Token has expired");
     res.send(spotify.data);
