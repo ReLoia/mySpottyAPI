@@ -1,17 +1,17 @@
 services:
-    web:
-        container_name: reloia_listen
-        build:
-          context: .
-          dockerfile: Dockerfile
-        ports:
-            - "8080:3000"
-        volumes:
-            - /opt/reloia_listen:/app/data
-        environment:
-          PROJECT_DOMAIN:
-          CLIENT_ID:
-          CLIENT_SECRET:
-          WEBHOOK:
-          SECRET:
-        restart: always
+  web:
+    container_name: myspottyapi
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:3000"
+    volumes:
+      - /opt/myspottyapi:/app/data
+    environment:
+      PROJECT_DOMAIN:
+      CLIENT_ID:
+      CLIENT_SECRET:
+      WEBHOOK:
+      SECRET:
+    restart: always

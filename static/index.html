@@ -113,13 +113,13 @@
         }
 
     </style>
-    <title>reloia_listen</title>
+    <title>mySpottyAPI</title>
 </head>
 <body>
-<h1>reloia_listen</h1>
+<h1>mySpottyAPI</h1>
 <p>real time listening status <i class="spotify">based on <a href="https://developer.spotify.com/">Spotify</a></i></p>
 <figure>
-    <img src="https://reloia.ddns.net/reloia_listen/widgets/listening" alt="">
+    <img src="https://reloia.ddns.net/mySpottyAPI/widgets/listening" alt="">
     <figcaption>real time listening status image - try reloading the page!</figcaption>
 </figure>
 
@@ -130,12 +130,12 @@
     <img src="https://cloud-clbdv2bwd-hack-club-bot.vercel.app/0screen_shot_2024-12-05_at_21.04.05.png" alt="listening API">
     <p>A simpler api that makes it easy to know what the current or last song is.</p>
     <br>
-    <code>GET <a href="/api">/api/</a></code>
+    <code>GET <a href="api">/api</a></code>
     <p>Get the currently played song</p>
 
     <script>
         async function getCurrentlyPlayedSong() {
-            const res = await fetch('/api');
+            const res = await fetch('api');
             const data = await res.json();
             document.querySelector('pre').innerText = JSON.stringify(data, null, 2);
         }
@@ -163,7 +163,7 @@
     <code>barColor</code> - the color of the bar that separates the image from the text<br>
     <code>barBackgroundColor</code> - the color of the bar's background<br>
     <code>borderRadius</code> - the border radius of the widget<br><br>
-    <code>The widget's endpoint is <a href="/widgets/listening">/widgets/listening</a></code>
+    <code>The widget's endpoint is <a href="widgets/listening">/widgets/listening</a></code>
 </div>
 
 <div class="sotd">
@@ -172,21 +172,21 @@
     <p>An API widget that allows to store your favorite songs with date and other info.</p>
     <p>It can be used to show the song of the day on your website, and it saves them in a file</p><br>
 
-    <code>GET <a href="/sotd">/sotd/</a></code>
+    <code>GET <a href="sotd">/sotd/</a></code>
     <p>Get the song of the day</p>
     <br>
     <b>The following requires an Authentication header</b><br><br>
 
-    <code>POST <a href="/sotd/clear">/sotd/clear</a></code>
+    <code>POST <a href="sotd/clear">/sotd/clear</a></code>
     <p>Clear the song list</p><br>
 
-    <code>POST <a href="/sotd">/sotd/</a></code>
+    <code>POST <a href="sotd">/sotd/</a></code>
     <p>Post a new song of the day</p><br>
 
-    <code>POST <a href="/sotd/url">/sotd/url</a></code>
+    <code>POST <a href="sotd/url">/sotd/url</a></code>
     <p>Post a new song of the day with an url</p><br>
 
-    <code>POST <a href="/sotd/remove">/sotd/remove</a></code>
+    <code>POST <a href="sotd/remove">/sotd/remove</a></code>
     <p>Remove a song of the day at a certain index</p>
 </div>
 
@@ -195,10 +195,10 @@
     <img src="https://cloud-bk4xtb7zj-hack-club-bot.vercel.app/0image.png" alt="canvas">
     <p>A canvas that works using pixel stored as single objects of an array.</p>
     <br>
-    <code>GET <a href="/paintcanvas/status">/paintcanvas/status</a></code>
+    <code>GET <a href="paintcanvas/status">/paintcanvas/status</a></code>
     <p>Get the paint canvas' current status</p>
     <br>
-    <code>POST <a href="/paintcanvas">/paintcanvas</a></code>
+    <code>POST <a href="paintcanvas">/paintcanvas</a></code>
     <p>Update a pixel on the canvas</p>
 </div>
 All of this works with Node.js and Spotify's API.

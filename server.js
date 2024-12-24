@@ -1,173 +1,157 @@
-// Base Requirements
-import dotenv from "dotenv";
 import fs from "fs";
-import {getBaseURL, handleErrors} from "./utils.js";
-// Server Requirements
-import {SpotifyAPI} from "./spotifyAPI.js";
 
-import express from "express";
+export class SpotifyAPI {
+    _accessTokenTimestamp = 0;
+    loadedDataJSON = false;
+    spEndpoint = "https://api.spotify.com/v1/";
 
-import cors from "cors";
-// Websocket stuff
-import http from "http";
-import {WebSocketServer} from "ws";
+    data = {
+        author: "loading",
+        name: "Please wait...",
+        song_link: "",
+        duration: 0,
+        playing: false,
+        album_name: "loading",
+        album_image: "https://upload.wikimedia.org/wikipedia/commons/5/59/Empty.png",
+        explicit: false,
+        progress: 0
+    };
 
-// Widgets
-import {listeningWidget} from "./widgets/listeningWidget.js";
+    lastSong = {}
 
-// Plugins
-import {PaintCanvas} from "./plugins/paintCanvas.js";
-import {SOTD} from "./plugins/sotd.js";
+    get accessToken() {
+        if (this._accessToken == "") this.handleRefreshToken();
+        if (Date.now() > (this._accessTokenTimestamp + 3600000) && this._refreshtoken) this.handleRefreshToken();
 
-dotenv.config();
-
-// Constants
-const BASE_URL = getBaseURL();
-
-const app = express();
-
-app.use(express.json());
-
-app.use(cors());
-app.use((req, res, next) => {
-    console.log(`[${req.method}] [${new Date().toLocaleString("it")}] ${req.url}`)
-    next();
-})
-
-const server = http.createServer(app);
-
-const wss = new WebSocketServer({server});
-
-
-server.listen(process.env.PORT || 3000, () => console.log(`Server started on ${BASE_URL}\nAlternatively on http://localhost:${process.env.PORT || 3000}`));
-
-const spotify = new SpotifyAPI();
-
-// Main app Loop
-setInterval(async () => {
-    if (!spotify.refreshToken) return console.log("Non c'è un refresh token");
-
-    const newData = await spotify.getData();
-
-    if (newData?.status == 401) return console.log(`3. Errore nel refresh token: ${newData?.status}`, newData.response);
-
-    if (
-        (spotify?.data?.song_link != newData?.song_link) ||
-        (spotify?.data?.playing != newData?.playing) ||
-        (Math.abs(newData?.progress - spotify?.data?.progress) >= 15000)
-    ) {
-        wss.clients.forEach(client => {
-            // if the number of clients has changed, send it
-            if (!spotify.data.clients || spotify.data.clients != wss.clients.size) newData.clients = wss.clients.size;
-            newData.type = "listening-status";
-
-            client.send(JSON.stringify(newData));
-        });
+        return this._accessToken;
     }
-    spotify.data = newData;
-}, 5000);
 
-let recentMessages = [];
-let onCooldown = [];
+    set accessToken(access_token) {
+        this._accessTokenTimestamp = Date.now();
+        this._accessToken = access_token;
+    }
 
-wss.on("connection", ws => {
-    const data = {...spotify.data};
+    get refreshToken() {
+        if (this._refreshtoken == "") return console.log("Non c'è un refresh token A") && false;
 
-    ws.send(JSON.stringify({listening: {...data, clients: wss.clients.size}, recentMessages, type: "init"}));
+        return this._refreshtoken;
+    }
 
-    ws.on("message", (message) => {
-        console.log(`Received message from client: ${message}`);
-        try {
-            const received = JSON.parse(message);
+    set refreshToken(refresh_token) {
+        this._refreshtoken = refresh_token;
 
-            if (onCooldown.includes(ws)) return;
-            onCooldown.push(ws);
-            setTimeout(() => onCooldown.splice(onCooldown.indexOf(ws), 1), 2500);
-
-            if (received.type == "chat") {
-                recentMessages.push({username: received.username, message: received.message});
-                setTimeout(() => recentMessages.shift(), 1000 * 60 * 60);
-                Array.from(wss.clients).forEach(client => {
-                    client.send(JSON.stringify({
-                        type: "chat",
-                        clients: wss.clients.size,
-                        username: received.username,
-                        message: received.message
-                    }));
-                });
-            }
-        } catch (err) {
-            console.error(err);
+        if (!this.loadedDataJSON) {
+            this.loadedDataJSON = true;
+            fs.writeFileSync('./data.json', `{ "refresh_token": "${refresh_token}" }`);
         }
-    });
-});
+    }
 
-// app.get("/", (req, res) => handleErrors(res, 200, `You shouldn't be here... Please go to https://reloia.github.io/ or the api endpoint : ${BASE_URL}/api`));
-app.get("/", (req, res) => res.send(fs.readFileSync("./static/index.html").toString()));
+    constructor() {
+        if (fs.existsSync("./data.json")) {
+            this.loadedDataJSON = true;
+            const datas = JSON.parse(fs.readFileSync("./data.json"));
 
-app.get("/api", async (_, res) => {
-    if (!spotify.accessToken) return handleErrors(res, 401, "Not logged in to Spotify or the Refresh Token has expired");
-    res.send(spotify.data);
-});
+            this.refreshToken = datas.refresh_token;
+        }
+    }
 
-app.get("/log-in", (req, res) => {
-    if (spotify.refreshToken) return handleErrors(res, 403, "Already logged in.");
+    async makeRequest(endpoint) {
+        if (!this.accessToken) await this.handleRefreshToken();
 
-    res.redirect("https://accounts.spotify.com/authorize?" + (new URLSearchParams({
-        response_type: "code",
-        client_id: process.env.CLIENT_ID,
-        scope: "user-read-private user-read-email user-read-playback-state user-read-currently-playing user-read-recently-played user-top-read user-read-playback-position",
-        redirect_uri: `${BASE_URL}/callback`,
-        state: (`${Math.random().toString(36)}00000000000000000`).slice(2, 12 + 2),
-    })).toString());
-});
+        return await fetch(this.spEndpoint + endpoint, {
+            headers: {Authorization: `Bearer ${this.accessToken}`}
+        })
+    }
 
-app.get("/callback", async (req, res) => {
-    const code = req.query.code;
+    async handleRefreshToken() {
+        const refresh_token = this.refreshToken;
 
-    if (code) {
-        const resp = await fetch("https://accounts.spotify.com/api/token", {
+        const res = await fetch("https://accounts.spotify.com/api/token", {
             method: "POST",
             body: new URLSearchParams({
-                code,
-                redirect_uri: `${BASE_URL}/callback`,
-                grant_type: "authorization_code"
+                grant_type: "refresh_token",
+                refresh_token
             }),
-            headers: {Authorization: `Basic ${(Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`)).toString("base64")}`,}
-        })
+            headers: {Authorization: `Basic ${(Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`)).toString("base64")}`}
+        });
+        if (res.status === 200) {
+            const body = await res.json();
+            this.accessToken = body.access_token;
 
-        console.log(resp.status);
-        const text = await resp.text();
-
-        // const data = await resp.json();
-        const data = JSON.parse(text);
-
-        if (data.error) return handleErrors(res, 400, "The server has given the erorr: " + data.error_description);
-        spotify.accessToken = data.access_token;
-        spotify.refreshToken = data.refresh_token;
+            await this.getData();
+            return;
+        }
+        const text = await res.text();
+        console.log(`1. Errore nel refresh token: ${res.status}`, text);
+        const json = JSON.parse(text);
+        if (json.error == "invalid_grant") {
+            console.log("The grant has expired, deleting the refresh token!");
+            fs.unlink("./data.json", () => {
+                console.log("Deleted!");
+            });
+        }
     }
 
-    res.send('<a href="/">Goto home</a>');
-});
+    async getData() {
+        if (!this.accessToken) await this.handleRefreshToken();
 
-// SOTD Stuff
-const sotd = new SOTD(spotify);
+        if (this.accessToken) {
+            let response = await this.makeRequest("me/player/currently-playing");
 
-app.get("/sotd", sotd.get);
-app.post("/sotd/clear", sotd.clear);
-app.post("/sotd/remove", sotd.remove);
-app.post("/sotd/url", sotd.url);
-app.post("/sotd", sotd.post);
+            if (response.status == 200) { // Current playing
+                try {
+                    const json = await response.json();
+                    return {
+                        author: json.item?.artists?.[0]?.name,
+                        name: json.item.name,
+                        song_link: json.item?.external_urls?.spotify,
+                        duration: json.item.duration_ms,
+                        explicit: json.item.explicit,
+                        playing: json.is_playing,
+                        album_name: json.item.album?.name,
+                        album_image: json.item.album?.images?.[1]?.url || "https://upload.wikimedia.org/wikipedia/commons/5/59/Empty.png",
+                        progress: json.progress_ms,
+                    }
+                } catch (err) {
+                    console.error(err);
+                    console.log(response);
+                }
+            } else if (response.status == 204) { // Last played
+                response = await this.makeRequest("me/player/recently-played?limit=1");
+                let json;
+                try {
+                    json = await response.json()
+                } catch (err) {
+                    console.error(err);
+                    console.log(response);
+                    await this.handleRefreshToken();
+                }
 
-// PaintCanvas canvas
-const paintCanvas = new PaintCanvas(wss);
-
-app.get("/paintcanvas/status", paintCanvas.sendStatus);
-
-/**
- * PaintCanvas a pixel in the canvas with the specified color using the index calculated in the frontend.
- */
-app.post("/paintcanvas", paintCanvas.post);
-
-// Widgets
-app.get('/widgets/listening', (req, res) => listeningWidget(req, res, spotify));
+                try {
+                    return {
+                        author: json.items[0].track.artists[0].name,
+                        name: json.items[0].track.name,
+                        song_link: json.items[0].track.external_urls.spotify,
+                        duration: json.items[0].track.duration_ms,
+                        explicit: json.items[0].track.explicit,
+                        playing: false, // Obviously it is false because it was previously playing
+                        album_name: json.items[0].track.album.name,
+                        album_image: json.items[0].track.album.images[1].url,
+                        progress: 0,
+                    };
+                } catch (err) {
+                    console.error(err);
+                    console.log(response);
+                }
+            } else if (response.status == 401) {
+                await this.handleRefreshToken();
+                return {
+                    status: 401,
+                    response
+                }
+            }
+        } else {
+            console.error("Non c'è un token");
+        }
+    }
+}

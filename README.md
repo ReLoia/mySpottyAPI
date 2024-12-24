@@ -1,11 +1,12 @@
-# reloia_listen
+# mySpottyAPI
 
 ![img.png](https://cloud-lm3w4o0q0-hack-club-bot.vercel.app/0image.png)  
 real time listening status **based on [Spotify](https://developer.spotify.com/)**
 
-# Spotify Key Guide
+# Spotify API Key Guide
 
-[Learn how to create a Spotify Developer API Key](https://github.com/ReLoia/reloia_listen/wiki/Creating-a-Spotify-Developer-API-Key-Guide) because you will need this later.
+[Learn how to create a Spotify Developer API Key](https://github.com/ReLoia/mySpottyAPI/wiki/Creating-a-Spotify-Developer-API-Key-Guide)
+because you will need this later.
 
 # Installation
 
@@ -13,11 +14,11 @@ real time listening status **based on [Spotify](https://developer.spotify.com/)*
 
 ### Clone the repository
 
-    git clone https://github.com/ReLoia/reloia_listen.git /path/to/reloia_listen
+    git clone https://github.com/ReLoia/mySpottyAPI.git /path/to/mySpottyAPI
 
 ### Install dependencies
 
-    cd /path/to/reloia_listen
+    cd /path/to/mySpottyAPI
     npm install
 
 ### Start the server
@@ -28,11 +29,11 @@ real time listening status **based on [Spotify](https://developer.spotify.com/)*
 
 ### Clone the repository
 
-    git clone https://github.com/ReLoia/reloia_listen.git /path/to/reloia_listen
+    git clone https://github.com/ReLoia/mySpottyAPI.git /path/to/mySpottyAPI
 
 ### Run the docker-compose file
 
-    cd /path/to/reloia_listen
+    cd /path/to/mySpottyAPI
     docker-compose up
 
 #### Login
