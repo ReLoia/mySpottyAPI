@@ -17,8 +17,6 @@ export class SpotifyAPI {
         progress: 0
     };
 
-    lastSong = {}
-
     get accessToken() {
         if (this._accessToken == "") this.handleRefreshToken();
         if (Date.now() > (this._accessTokenTimestamp + 3600000) && this._refreshtoken) this.handleRefreshToken();
@@ -152,6 +150,38 @@ export class SpotifyAPI {
             }
         } else {
             console.error("Non c'è un token");
+        }
+    }
+
+    async getLastSong() {
+        if (!this.accessToken) await this.handleRefreshToken();
+
+        console.log("Getting last song");
+
+        if (this.accessToken) {
+            if (this.data.playing == false && this.data.progress == 0) return null;
+
+            let response = await this.makeRequest("me/player/recently-played?limit=2");
+
+            if (response.status == 200) {
+                try {
+                    const json = await response.json();
+                    let index = 0;
+                    // If the last song is the same as the current one, get the previous one
+                    if (json.items[index].track.external_urls.spotify == this.data.song_link) index = 1;
+                    return {
+                        author: json.items[index].track.artists[0].name,
+                        name: json.items[index].track.name,
+                        song_link: json.items[index].track.external_urls.spotify,
+                        explicit: json.items[index].track.explicit,
+                        album_name: json.items[index].track.album.name,
+                        album_image: json.items[index].track.album.images[1].url,
+                    };
+                } catch (err) {
+                    console.error(err);
+                    console.log(response);
+                }
+            }
         }
     }
 }

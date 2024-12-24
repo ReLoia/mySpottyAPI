@@ -131,28 +131,47 @@
     <p>A simpler api that makes it easy to know what the current or last song is.</p>
     <br>
     <code>GET <a href="api">/api</a></code>
-    <p>Get the currently played song</p>
+    <p>Get the currently (or last) played song</p>
+
+    <pre id="currentSong"></pre>
+    <code>GET <a href="api/last">/api/last</a></code>
+    <p>Get the last played song</p>
+
+    <pre id="lastSong"></pre>
 
     <script>
         async function getCurrentlyPlayedSong() {
             const res = await fetch('api');
             const data = await res.json();
-            document.querySelector('pre').innerText = JSON.stringify(data, null, 2);
+            document.querySelector('pre#currentSong').innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function getLastPlayedSong() {
+            const res = await fetch('api/last');
+            try {
+                const data = await res.json();
+                document.querySelector('pre#lastSong').innerText = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.querySelector('pre#lastSong').innerText = 'The current song is the last song because the user is not listening to anything';
+            }
         }
 
         getCurrentlyPlayedSong()
-        setInterval(getCurrentlyPlayedSong, 5000);
+        getLastPlayedSong()
+        setInterval(_ => {
+            getCurrentlyPlayedSong()
+            getLastPlayedSong()
+        }, 5000);
 
     </script>
 
-    <pre></pre>
     <p>To see a better usage of this API go to <a href="https://reloia.github.io/">reloia.github.io</a></p>
 </div>
 
 <div class="listeningWidget">
     <h3>Generate an image to put on any website</h3>
-    <p>Like the one you can see at the top of the page!</p>
-    <br>
+    <p style="margin-top: -30px; display: block; font-size: .9rem">Like the one you can see at the top of the page!</p>
+    <br><br>
     <p>That shows your currently played song.</p>
     <p>To generate the image, you need to put the url to the widget's endpoint.</p>
     <br>

@@ -112,7 +112,7 @@ app.get("/api", async (_, res) => {
 
 app.get("/api/last", async (_, res) => {
     if (!spotify.accessToken) return handleErrors(res, 401, "Not logged in to Spotify or the Refresh Token has expired");
-    res.send(recentMessages);
+    res.send(await spotify.getLastSong())
 });
 
 app.get("/log-in", (req, res) => {
