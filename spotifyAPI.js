@@ -17,6 +17,8 @@ export class SpotifyAPI {
         progress: 0
     };
 
+    lastSong = {}
+
     get accessToken() {
         if (this._accessToken == "") this.handleRefreshToken();
         if (Date.now() > (this._accessTokenTimestamp + 3600000) && this._refreshtoken) this.handleRefreshToken();
