@@ -80,7 +80,7 @@ export class SpotifyAPI {
             return;
         }
         const text = await res.text();
-        console.log(`1. Errore nel refresh token: ${res.status}`, text);
+        console.log(`1. Error in refresh token: ${res.status}`, text);
         const json = JSON.parse(text);
         if (json.error == "invalid_grant") {
             console.log("The grant has expired, deleting the refresh token!");
@@ -155,8 +155,6 @@ export class SpotifyAPI {
 
     async getLastSong() {
         if (!this.accessToken) await this.handleRefreshToken();
-
-        console.log("Getting last song");
 
         if (this.accessToken) {
             if (this.data.playing == false && this.data.progress == 0) return null;

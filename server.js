@@ -38,18 +38,17 @@ const server = http.createServer(app);
 
 const wss = new WebSocketServer({server});
 
-
 server.listen(process.env.PORT || 3000, () => console.log(`Server started on ${BASE_URL}\nAlternatively on http://localhost:${process.env.PORT || 3000}`));
 
 const spotify = new SpotifyAPI();
 
 // Main app Loop
 setInterval(async () => {
-    if (!spotify.refreshToken) return console.log("Non c'è un refresh token");
+    if (!spotify.refreshToken) return console.log("There is no refresh token");
 
     const newData = await spotify.getData();
 
-    if (newData?.status == 401) return console.log(`3. Errore nel refresh token: ${newData?.status}`, newData.response);
+    if (newData?.status == 401) return console.log(`3. Error in refresh token: ${newData?.status}`, newData.response);
 
     if (
         (spotify?.data?.song_link != newData?.song_link) ||
@@ -57,11 +56,11 @@ setInterval(async () => {
         (Math.abs(newData?.progress - spotify?.data?.progress) >= 15000)
     ) {
         wss.clients.forEach(client => {
-            // if the number of clients has changed, send it
-            if (!spotify.data.clients || spotify.data.clients != wss.clients.size) newData.clients = wss.clients.size;
-            newData.type = "listening-status";
-
-            client.send(JSON.stringify(newData));
+            client.send(JSON.stringify({
+                data: newData,
+                type: "listening-status",
+                clients: wss.clients.size
+            }));
         });
     }
     spotify.data = newData;
@@ -73,7 +72,7 @@ let onCooldown = [];
 wss.on("connection", ws => {
     const data = {...spotify.data};
 
-    ws.send(JSON.stringify({listening: {...data, clients: wss.clients.size}, recentMessages, type: "init"}));
+    ws.send(JSON.stringify({data, clients: wss.clients.size, recentMessages, type: "init"}));
 
     ws.on("message", (message) => {
         console.log(`Received message from client: ${message}`);
@@ -91,8 +90,9 @@ wss.on("connection", ws => {
                     client.send(JSON.stringify({
                         type: "chat",
                         clients: wss.clients.size,
-                        username: received.username,
-                        message: received.message
+                        data: {
+                            ...received.message
+                        }
                     }));
                 });
             }
@@ -147,7 +147,7 @@ app.get("/callback", async (req, res) => {
         // const data = await resp.json();
         const data = JSON.parse(text);
 
-        if (data.error) return handleErrors(res, 400, "The server has given the erorr: " + data.error_description);
+        if (data.error) return handleErrors(res, 400, "The server has given the error: " + data.error_description);
         spotify.accessToken = data.access_token;
         spotify.refreshToken = data.refresh_token;
     }
