@@ -161,6 +161,8 @@ const sotd = new SOTD(spotify);
 app.get("/sotd", sotd.get);
 app.post("/sotd/clear", sotd.clear);
 app.post("/sotd/remove", sotd.remove);
+app.post("/sotd/remove/date", sotd.removeFromDate);
+app.post("/sotd/remove/url", sotd.removeFromUrl);
 app.post("/sotd/url", sotd.url);
 app.post("/sotd", sotd.post);
 

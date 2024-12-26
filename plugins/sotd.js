@@ -38,19 +38,19 @@ export class SOTD {
     }
 
     async get(_, res) {
-        if (!fs.existsSync("./data/sotd.json")) return handleErrors(res, 204, "No songs of the day");
+        if (!fs.existsSync("./data/sotd.json")) return handleErrors(res, 404, "No songs of the day");
         const data = JSON.parse(fs.readFileSync("./data/sotd.json")).reverse();
 
         res.send(data);
     }
 
     async post(req, res) {
-        const {name, author, date, album} = req.body;
+        const {name, author, date, album, url} = req.body;
 
-        if (!name || !author || !date || !album) return handleErrors(res, 400, 'Missing parameters');
+        if (!name || !author || !date || !album || !url) return handleErrors(res, 400, 'Missing parameters');
         if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
 
-        return res.send(this.appendToSotd({name, author, date, album}))
+        return res.send(this.appendToSotd({name, author, date, album, url}))
     }
 
     async clear(req, res) {
@@ -70,6 +70,40 @@ export class SOTD {
         const sotd = JSON.parse(fs.readFileSync("./data/sotd.json"));
 
         if (index < 0 || index > sotd.length) return handleErrors(res, 400, "Index out of range");
+        sotd.splice(index, 1);
+        fs.writeFileSync("./data/sotd.json", JSON.stringify(sotd));
+
+        res.send({message: `Song removed`});
+    }
+
+    async removeFromUrl(req, res) {
+        const {url} = req.body;
+
+        if (!url) return handleErrors(res, 400, 'Missing parameters');
+        if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
+
+        const sotd = JSON.parse(fs.readFileSync("./data/sotd.json"));
+
+        const index = sotd.findIndex(s => s.url === url);
+
+        if (index === -1) return handleErrors(res, 404, "Song not found");
+        sotd.splice(index, 1);
+        fs.writeFileSync("./data/sotd.json", JSON.stringify(sotd));
+
+        res.send({message: `Song removed`});
+    }
+
+    async removeFromDate(req, res) {
+        const {date} = req.body;
+
+        if (!date) return handleErrors(res, 400, 'Missing parameters');
+        if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
+
+        const sotd = JSON.parse(fs.readFileSync("./data/sotd.json"));
+
+        const index = sotd.findIndex(s => s.date === date);
+
+        if (index === -1) return handleErrors(res, 404, "Song not found");
         sotd.splice(index, 1);
         fs.writeFileSync("./data/sotd.json", JSON.stringify(sotd));
 
@@ -96,7 +130,8 @@ export class SOTD {
             name: json.name,
             author: json.artists.map(a => a.name).join(", "),
             date: Date.now(),
-            album: json.album.images[0].url
+            album: json.album.images[0].url,
+            url
         }))
     }
 }
