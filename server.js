@@ -115,6 +115,17 @@ app.get("/api/last", async (_, res) => {
     res.send(await spotify.getLastSong())
 });
 
+app.get("/song-info", async (req, res) => {
+    if (!spotify.accessToken) return handleErrors(res, 401, "Not logged in to Spotify or the Refresh Token has expired");
+    if (!req.query.url) return handleErrors(res, 400, "Missing URL parameter");
+
+    if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
+
+    const song = await spotify.getSongData(req.query.url);
+
+    res.send(song);
+});
+
 app.get("/log-in", (req, res) => {
     if (spotify.refreshToken) return handleErrors(res, 403, "Already logged in.");
 

@@ -182,4 +182,27 @@ export class SpotifyAPI {
             }
         }
     }
+
+    async getSongData(url) {
+        if (!this.accessToken) await this.handleRefreshToken();
+
+        if (this.accessToken) {
+            const it = new URL(url).pathname;
+            const response = await this.makeRequest(`tracks/${it.slice(it.lastIndexOf("/") + 1)}?market=IT`);
+            if (response.status !== 200) {
+                console.log(response);
+                return {status: response.status};
+            }
+
+            const json = await response.json();
+
+            return {
+                name: json.name,
+                author: json.artists.map(a => a.name).join(", "),
+                explicit: json.explicit,
+                album_name: json.album.name,
+                album_image: json.album.images[1].url
+            }
+        }
+    }
 }
