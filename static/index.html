@@ -9,7 +9,7 @@
         }
 
         body {
-            background-color: #191919;
+            background-color: #190E0E;
             color: #cdcdcd;
             font-family: Arial, sans-serif;
 
@@ -19,10 +19,10 @@
 
             margin: 0;
             min-height: 100vh;
-            padding: 10px 10px 100px;
+            padding: 30px 30px 100px;
 
             @media screen and (min-width: 1000px) {
-                & > div:not(:first-of-type) {
+                & > div:not(.app, .listenApi) {
                     margin-top: -100px;
                 }
             }
@@ -69,8 +69,39 @@
             margin: 0;
         }
 
+        .app {
+            width: 100%;
+            max-width: 1300px;
+
+
+            & > .features {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-around;
+                align-items: center;
+
+                padding: 0 10px;
+                border-radius: 10px;
+                background-color: #1c1c1c;
+
+                & > figure {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-around;
+                    align-items: center;
+
+                    & > img {
+                        border-radius: 10px;
+                    }
+
+                    & > figcaption {
+                        font-size: .85rem;
+                    }
+                }
+            }
+        }
+
         .listenApi {
-            margin-top: 12px;
             width: 100%;
             max-width: 1300px;
 
@@ -80,6 +111,10 @@
 
             & > p {
                 margin-bottom: 1rem;
+            }
+
+            #lastSong {
+                white-space: pre-wrap;
             }
         }
 
@@ -100,6 +135,10 @@
             & > h3 {
                 margin-bottom: 2rem;
             }
+
+            & > img {
+                max-width: 100%;
+            }
         }
 
         .paintCanvas {
@@ -109,6 +148,10 @@
 
             & > h3 {
                 margin-bottom: 2rem;
+            }
+
+            & > img {
+                max-width: 100%;
             }
         }
 
@@ -122,6 +165,51 @@
     <img src="https://reloia.ddns.net/myspottyapi/widgets/listening" alt="">
     <figcaption>real time listening status image - try reloading the page!</figcaption>
 </figure>
+
+<h2>the android app</h2>
+
+<div class="app">
+    <p><b>mySpotty</b> is the android app that makes the usage of the API easier</p><br>
+    <h3>Key Features</h3>
+
+    <div class="features">
+        <figure>
+            <img src="https://github.com/user-attachments/assets/20ed3dc6-2513-4501-b518-8afafcb7b06b" width=200
+                 alt="home page">
+            <figcaption>Home page</figcaption>
+        </figure>
+
+        <figure>
+            <img src="https://github.com/user-attachments/assets/0ae5565e-26f7-4f68-860e-7bd0b23bdc4b" width=200
+                 alt="home page last listened">
+            <figcaption>Last listened song in home page</figcaption>
+        </figure>
+
+
+        <figure>
+            <img src="https://github.com/user-attachments/assets/5848351c-deb3-4956-9f1f-aff9d7c02b07" width=200
+                 alt="sotd sheet in home page"/>
+            <figcaption>Song of The Day sheet in home page</figcaption>
+        </figure>
+
+
+        <figure>
+            <img src="https://github.com/user-attachments/assets/13910be7-3d9e-448d-8de5-aeb649afdf5a" width=200
+                 alt="settings page">
+            <figcaption>Settings page</figcaption>
+        </figure>
+
+
+        <figure>
+            <img src="https://github.com/user-attachments/assets/83f184fa-c8a6-4e25-9252-fa36999e82b1" width=200
+                 alt="shared link page"/>
+            <figcaption>Shared link page</figcaption>
+        </figure>
+    </div>
+
+    <h3>Please vote my App on the <a href="https://forms.hackclub.com/dessert">dessert form</a></h3>
+
+</div>
 
 <h2>What can this server do?</h2>
 
@@ -226,6 +314,7 @@
     <code>POST <a href="paintcanvas">/paintcanvas</a></code>
     <p>Update a pixel on the canvas</p>
 </div>
+<br><br>
 All of this works with Node.js and Spotify's API.
 </body>
 </html>

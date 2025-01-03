@@ -117,7 +117,7 @@ app.get("/api/last", async (_, res) => {
 
 app.get("/song-info", async (req, res) => {
     if (!spotify.accessToken) return handleErrors(res, 401, "Not logged in to Spotify or the Refresh Token has expired");
-    if (!req.query.id) return handleErrors(res, 400, "Missing URL parameter");
+    if (!req.query.id) return handleErrors(res, 400, "Missing ID parameter");
 
     if (req.headers.authorization !== process.env.SECRET) return handleErrors(res, 401, "Wrong code");
 
