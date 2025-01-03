@@ -183,12 +183,11 @@ export class SpotifyAPI {
         }
     }
 
-    async getSongData(url) {
+    async getSongData(songId) {
         if (!this.accessToken) await this.handleRefreshToken();
 
         if (this.accessToken) {
-            const it = new URL(url).pathname;
-            const response = await this.makeRequest(`tracks/${it.slice(it.lastIndexOf("/") + 1)}?market=IT`);
+            const response = await this.makeRequest(`tracks/${songId}?market=IT`);
             if (response.status !== 200) {
                 console.log(response);
                 return {status: response.status};
