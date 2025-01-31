@@ -22,7 +22,7 @@
             padding: 30px 30px 100px;
 
             @media screen and (min-width: 1000px) {
-                & > div:not(.app, .listenApi, .guide) {
+                & > div:not(.app, .listenApi, .guide, .switcher) {
                     margin-top: -100px;
                 }
             }
@@ -82,20 +82,62 @@
             }
         }
 
+        .switcher {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+            gap: 1px;
+
+            & > button {
+                background-color: #1c1c1c;
+                border: none;
+                color: #cdcdcd;
+                cursor: pointer;
+                font-size: 1rem;
+                padding: 10px 20px;
+
+                &:nth-child(1) {
+                    border-bottom-left-radius: 10px;
+                    border-top-left-radius: 10px;
+                }
+
+                &:nth-child(2) {
+                    border-bottom-right-radius: 10px;
+                    border-top-right-radius: 10px;
+                }
+
+                &:hover {
+                    background-color: #2c2c2c;
+                }
+
+                &.selected {
+                    background-color: #474747;
+                }
+            }
+        }
+
         .app {
             width: 100%;
             max-width: 1300px;
 
-
             & > .features {
                 display: flex;
                 flex-wrap: wrap;
-                justify-content: space-around;
-                align-items: center;
 
                 padding: 0 10px;
                 border-radius: 10px;
-                background-color: #1c1c1c;
+
+                gap: 20px;
+
+                & > .featured {
+                    background: #48450a;
+                    margin-inline: auto;
+                }
+
+                & > br {
+                    width: 100vw;
+                    display: block;
+                }
 
                 & > figure {
                     display: flex;
@@ -103,7 +145,14 @@
                     justify-content: space-around;
                     align-items: center;
 
-                    & > img {
+                    background-color: #1c1c1c;
+                    border-radius: 10px;
+                    width: 200px;
+                    padding: 10px;
+                    margin: 0;
+
+                    & > img, video {
+                        width: 190px;
                         border-radius: 10px;
                     }
 
@@ -168,6 +217,11 @@
             }
         }
 
+        #endnote {
+            margin-top: 3rem;
+            font-size: .9rem;
+        }
+
     </style>
     <title>mySpottyAPI</title>
 </head>
@@ -179,61 +233,15 @@
     <figcaption>real time listening status image - try reloading the page!</figcaption>
 </figure>
 
-<h2>the guide</h2>
+<div class="switcher">
+    <button class="selected" onclick="switchM(event, true)">Listening API</button>
 
-<div class="guide">
-    I've made a guide on how to deploy your own version of this API, you can find it <a
-        href="https://github.com/ReLoia/mySpottyAPI/blob/master/README.md">here</a>
+    <button onclick="switchM(event,false)">Android APP</button>
 </div>
 
-<h2>the android app</h2>
+<h2 class="m1">What can this server do?</h2>
 
-<div class="app">
-    <p><b>mySpotty</b> is the android app that makes the usage of the API easier</p><br>
-    <h3>Key Features</h3>
-
-    <div class="features">
-        <figure>
-            <img src="https://github.com/user-attachments/assets/20ed3dc6-2513-4501-b518-8afafcb7b06b" width=200
-                 alt="home page">
-            <figcaption>Home page</figcaption>
-        </figure>
-
-        <figure>
-            <img src="https://github.com/user-attachments/assets/0ae5565e-26f7-4f68-860e-7bd0b23bdc4b" width=200
-                 alt="home page last listened">
-            <figcaption>Last listened song in home page</figcaption>
-        </figure>
-
-
-        <figure>
-            <img src="https://github.com/user-attachments/assets/5848351c-deb3-4956-9f1f-aff9d7c02b07" width=200
-                 alt="sotd sheet in home page"/>
-            <figcaption>Song of The Day sheet in home page</figcaption>
-        </figure>
-
-
-        <figure>
-            <img src="https://github.com/user-attachments/assets/13910be7-3d9e-448d-8de5-aeb649afdf5a" width=200
-                 alt="settings page">
-            <figcaption>Settings page</figcaption>
-        </figure>
-
-
-        <figure>
-            <img src="https://github.com/user-attachments/assets/83f184fa-c8a6-4e25-9252-fa36999e82b1" width=200
-                 alt="shared link page"/>
-            <figcaption>Shared link page</figcaption>
-        </figure>
-    </div>
-
-    <h3>Please vote my App on the <a href="https://forms.hackclub.com/dessert">dessert form</a></h3>
-
-</div>
-
-<h2>What can this server do?</h2>
-
-<div class="listenApi">
+<div class="m1 listenApi">
     <h3>The listening API</h3>
     <img src="https://cloud-clbdv2bwd-hack-club-bot.vercel.app/0screen_shot_2024-12-05_at_21.04.05.png" alt="listening API">
     <p>A simpler api that makes it easy to know what the current or last song is.</p>
@@ -276,7 +284,7 @@
     <p>To see a better usage of this API go to <a href="https://reloia.github.io/">reloia.github.io</a></p>
 </div>
 
-<div class="listeningWidget">
+<div class="m1 listeningWidget">
     <h3>Generate an image to put on any website</h3>
     <p style="margin-top: -30px; display: block; font-size: .9rem">Like the one you can see at the top of the page!</p>
     <br><br>
@@ -293,7 +301,7 @@
     <code>The widget's endpoint is <a href="widgets/listening">/widgets/listening</a></code>
 </div>
 
-<div class="sotd">
+<div class="m1 sotd">
     <h3>the Song of the Day</h3>
     <img src="https://cloud-2pi97pnk7-hack-club-bot.vercel.app/0screen_shot_2024-12-05_at_20.58.17.png" alt="sotd" width="600">
     <p>An API widget that allows to store your favorite songs with date and other info.</p>
@@ -323,7 +331,7 @@
     <p>Remove a song of the day with a certain date</p>
 </div>
 
-<div class="paintCanvas">
+<div class="m1 paintCanvas">
     <h3>Paint Canvas</h3>
     <img src="https://cloud-bk4xtb7zj-hack-club-bot.vercel.app/0image.png" alt="canvas">
     <p>A canvas that works using pixel stored as single objects of an array.</p>
@@ -334,7 +342,70 @@
     <code>POST <a href="paintcanvas">/paintcanvas</a></code>
     <p>Update a pixel on the canvas</p>
 </div>
-<br><br>
-All of this works with Node.js and Spotify's API.
+
+<h2 class="m2">the android app</h2>
+
+<div class="m2 app">
+    <p style="width: 100%; text-align: center"><b>mySpotty</b> is the android app that makes the usage of the API easier
+    </p><br>
+    <h3 style="width: 100%; text-align: center">Gallery</h3>
+    <div class="features">
+        <figure class="featured">
+            <video muted controls src="https://cloud-8b3j8qls8-hack-club-bot.vercel.app/01000112538.mp4"></video>
+        </figure>
+        <br>
+        <figure>
+            <img src="https://github.com/user-attachments/assets/20ed3dc6-2513-4501-b518-8afafcb7b06b" width=200
+                 alt="home page">
+            <figcaption>Home page</figcaption>
+        </figure>
+
+        <figure>
+            <img src="https://github.com/user-attachments/assets/0ae5565e-26f7-4f68-860e-7bd0b23bdc4b" width=200
+                 alt="home page last listened">
+            <figcaption>Last listened song in home page</figcaption>
+        </figure>
+
+
+        <figure>
+            <img src="https://github.com/user-attachments/assets/5848351c-deb3-4956-9f1f-aff9d7c02b07" width=200
+                 alt="sotd sheet in home page"/>
+            <figcaption>Song of The Day sheet in home page</figcaption>
+        </figure>
+
+
+        <figure>
+            <img src="https://github.com/user-attachments/assets/13910be7-3d9e-448d-8de5-aeb649afdf5a" width=200
+                 alt="settings page">
+            <figcaption>Settings page</figcaption>
+        </figure>
+
+
+        <figure>
+            <img src="https://github.com/user-attachments/assets/83f184fa-c8a6-4e25-9252-fa36999e82b1" width=200
+                 alt="shared link page"/>
+            <figcaption>Shared link page</figcaption>
+        </figure>
+    </div>
+</div>
+
+<p id="endnote">All of this works with Node.js and Spotify's API.</p>
 </body>
+<script>
+    let m1 = false;
+
+    function switchM(e, value) {
+        console.log(e)
+        if (e) {
+            document.querySelectorAll('.switcher button').forEach(e => e.classList.remove('selected'));
+            e?.target.classList.add('selected');
+        }
+
+        m1 = value ?? !m1;
+        document.querySelectorAll('.m1').forEach(e => e.style.display = m1 ? 'block' : 'none');
+        document.querySelectorAll('.m2').forEach(e => e.style.display = m1 ? 'none' : 'block');
+    }
+
+    switchM();
+</script>
 </html>
