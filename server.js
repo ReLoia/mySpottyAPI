@@ -6,6 +6,14 @@ import {getBaseURL, handleErrors} from "./utils.js";
 import {SpotifyAPI} from "./spotifyAPI.js";
 
 import express from "express";
+import rateLimit from "express-rate-limit";
+
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 50, // limit each IP to 50 requests per windowMs
+    message: "Too many requests from this IP, please try again later."
+});
+
 
 import cors from "cors";
 // Websocket stuff
@@ -27,6 +35,7 @@ const BASE_URL = getBaseURL();
 const app = express();
 
 app.use(express.json());
+app.use(limiter);
 
 app.use(cors());
 app.use((req, res, next) => {

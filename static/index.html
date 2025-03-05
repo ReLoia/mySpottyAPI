@@ -406,7 +406,6 @@
         document.querySelectorAll('.m2').forEach(e => e.style.display = m1 ? 'none' : 'block');
     }
 
-    // if the query parameter "m" is present, switch to the app
     if (new URLSearchParams(window.location.search).get('m') === '1') {
         switchM(null, false);
     } else {
